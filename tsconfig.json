@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": [
+    "src/pages/agent/**",
+    "src/pages/categories/**",
+    "src/pages/propertyTypes/**",
+    "src/pages/services/**",
+    "src/pages/addons/**",
+    "src/pages/pricingRules/**",
+    "src/pages/agents/**",
+    "src/pages/bookings/**",
+    "src/pages/apartments/**",
+    "src/pages/shortletBookings/**",
+    "src/pages/transactions/**",
+    "src/pages/DashboardOverviewPage.tsx",
+    "src/pages/LoginPage.tsx",
+    "src/components/agent/**",
+    "src/components/layout/Sidebar.tsx",
+    "src/components/layout/Header.tsx",
+    "src/components/layout/ProtectedRoute.tsx",
+    "src/components/layout/PageLayout.tsx",
+    "src/context/AgentAuthContext.tsx"
+  ]
+}
