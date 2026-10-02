@@ -84,6 +84,10 @@ export const CustomerFooter: React.FC = () => {
 
         <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
           <p>© {new Date().getFullYear()} Lofix Technologies Ltd. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <Link to="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
+          </div>
           <div className="flex items-center gap-1">
             <span>Crafted with</span>
             <Heart className="w-3.5 h-3.5 text-red-500 fill-current" />
