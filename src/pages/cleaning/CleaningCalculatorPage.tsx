@@ -12,6 +12,7 @@ import { CustomerLayout } from '../../components/layout/CustomerLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
+import { Badge } from '../../components/common/Badge';
 import { ToastMessage } from '../../components/common/Toast';
 import { PropertyManagerModal } from '../../components/cleaning/PropertyManagerModal';
 import { PriceChangeAcceptanceModal } from '../../components/listings/PriceChangeAcceptanceModal';
@@ -37,6 +38,7 @@ import {
   CalendarDays,
   Bed,
   Tv,
+  Utensils,
 } from 'lucide-react';
 
 export const CleaningCalculatorPage: React.FC = () => {
@@ -58,6 +60,16 @@ export const CleaningCalculatorPage: React.FC = () => {
     queryFn: cleaningCustomerApi.getAddons,
   });
 
+  const {
+    data: dishwashingCatalogue = [],
+    isLoading: isDishwashingLoading,
+    isError: isDishwashingError,
+    error: dishwashingFetchError,
+  } = useQuery({
+    queryKey: ['dishwashingCatalogueItems'],
+    queryFn: () => cleaningCustomerApi.getDishwashingItems(),
+  });
+
   const { data: savedProperties = [], refetch: refetchProperties } = useQuery({
     queryKey: ['savedProperties'],
     queryFn: cleaningCustomerApi.getSavedProperties,
@@ -67,10 +79,10 @@ export const CleaningCalculatorPage: React.FC = () => {
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedPropertyTypeId, setSelectedPropertyTypeId] = useState<number | null>(null);
 
-  // Split Room Counts
-  const [numberOfBedrooms, setNumberOfBedrooms] = useState<number>(2);
-  const [numberOfLivingRooms, setNumberOfLivingRooms] = useState<number>(1);
-  const [numberOfBathrooms, setNumberOfBathrooms] = useState<number>(2);
+  // Split Room Counts — Defaults: Bedrooms = 1, Living = 0, Bathrooms = 1, Floors = 1, Kitchens = 1
+  const [numberOfBedrooms, setNumberOfBedrooms] = useState<number>(1);
+  const [numberOfLivingRooms, setNumberOfLivingRooms] = useState<number>(0);
+  const [numberOfBathrooms, setNumberOfBathrooms] = useState<number>(1);
   const [numberOfFloors, setNumberOfFloors] = useState<number>(1);
 
   // Optional Area
@@ -78,6 +90,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   const [squareMetersInput, setSquareMetersInput] = useState<string>('100');
 
   const [selectedAddons, setSelectedAddons] = useState<Record<number, number>>({});
+  const [selectedDishwashingQuantities, setSelectedDishwashingQuantities] = useState<Record<number, number>>({});
 
   // Preferences
   const [furnishingState, setFurnishingState] = useState<FurnishingState>('OCCUPIED');
@@ -155,14 +168,13 @@ export const CleaningCalculatorPage: React.FC = () => {
     if (hasSplit) {
       setIsLegacyProperty(false);
       setLegacyRoomTotal(null);
-      setNumberOfBedrooms(prop.numberOfBedrooms || 0);
+      setNumberOfBedrooms(prop.numberOfBedrooms || 1);
       setNumberOfLivingRooms(prop.numberOfLivingRooms || 0);
     } else {
       // Legacy total-only property
       setIsLegacyProperty(true);
-      setLegacyRoomTotal(prop.numberOfRooms || 2);
-      // Prompt user to supply split breakdown; default bedrooms to legacy total and living to 0
-      setNumberOfBedrooms(prop.numberOfRooms || 2);
+      setLegacyRoomTotal(prop.numberOfRooms || 1);
+      setNumberOfBedrooms(prop.numberOfRooms || 1);
       setNumberOfLivingRooms(0);
     }
 
@@ -180,6 +192,26 @@ export const CleaningCalculatorPage: React.FC = () => {
     syncDimensionsFromProperty(prop);
   };
 
+  // Dishwashing quantity helper
+  const handleDishwashingQuantityChange = (itemId: number, delta: number) => {
+    setSelectedDishwashingQuantities((prev) => {
+      const current = prev[itemId] || 0;
+      const updated = Math.min(1000, Math.max(0, current + delta));
+      return { ...prev, [itemId]: updated };
+    });
+  };
+
+  // Format Dishwashing items payload (omitting 0 quantities, unique item IDs)
+  const getDishwashingPayload = () => {
+    return Object.entries(selectedDishwashingQuantities)
+      .filter(([_, qty]) => qty > 0)
+      .map(([itemIdStr, quantity]) => ({
+        itemId: parseInt(itemIdStr, 10),
+        quantity: Math.min(1000, Math.max(1, quantity)),
+      }))
+      .slice(0, 50); // Maximum 50 item types
+  };
+
   // Live Quote Calculation with Out-of-Order protection
   useEffect(() => {
     if (!selectedServiceId || !selectedPropertyTypeId) return;
@@ -193,6 +225,8 @@ export const CleaningCalculatorPage: React.FC = () => {
         const addonPayload = Object.entries(selectedAddons)
           .filter(([_, qty]) => qty > 0)
           .map(([addonId, quantity]) => ({ addonId: parseInt(addonId, 10), quantity }));
+
+        const dishwashingItemsPayload = getDishwashingPayload();
 
         const sqMetersValue = dontKnowArea ? null : (parseInt(squareMetersInput, 10) || null);
 
@@ -208,6 +242,7 @@ export const CleaningCalculatorPage: React.FC = () => {
           suppliesPreference,
           frequency,
           addons: addonPayload,
+          dishwashingItems: dishwashingItemsPayload,
         });
 
         // Discard stale out-of-order response
@@ -221,7 +256,7 @@ export const CleaningCalculatorPage: React.FC = () => {
           const detail =
             err.response?.data?.message ||
             err.message ||
-            'No pricing rule configured for this service and property type combination.';
+            'No pricing rule configured for this service and selection.';
           setQuoteError(detail);
         }
       } finally {
@@ -231,7 +266,7 @@ export const CleaningCalculatorPage: React.FC = () => {
       }
     };
 
-    const timer = setTimeout(calculate, 300);
+    const timer = setTimeout(calculate, 500);
     return () => clearTimeout(timer);
   }, [
     selectedServiceId,
@@ -246,6 +281,7 @@ export const CleaningCalculatorPage: React.FC = () => {
     suppliesPreference,
     frequency,
     selectedAddons,
+    selectedDishwashingQuantities,
   ]);
 
   const handleAddonQuantityChange = (addonId: number, delta: number) => {
@@ -276,14 +312,13 @@ export const CleaningCalculatorPage: React.FC = () => {
       return;
     }
 
-    if (isBookingLoading) return; // Prevent duplicate submission
+    if (isBookingLoading || isCalculating || !!quoteError) return;
 
     setIsBookingLoading(true);
 
     try {
-      // 1. Auto-save current dimensions to selected property first and await success
+      // 1. Auto-save current dimensions to selected property first
       const sqMetersValue = dontKnowArea ? null : (parseInt(squareMetersInput, 10) || null);
-
       const targetProperty = savedProperties.find((p) => p.id === selectedPropertyId);
 
       const needsPropertyUpdate =
@@ -315,10 +350,12 @@ export const CleaningCalculatorPage: React.FC = () => {
         await refetchProperties();
       }
 
-      // 2. Submit booking payload (contains ONLY propertyId, serviceId, scheduledAt, preferences, addons, customerNote)
+      // 2. Submit booking payload with exact dishwashing payload used for quote
       const addonPayload = Object.entries(selectedAddons)
         .filter(([_, qty]) => qty > 0)
         .map(([addonId, quantity]) => ({ addonId: parseInt(addonId, 10), quantity }));
+
+      const dishwashingPayload = getDishwashingPayload();
 
       const booking = await cleaningCustomerApi.createBooking({
         propertyId: selectedPropertyId,
@@ -327,13 +364,13 @@ export const CleaningCalculatorPage: React.FC = () => {
         furnishingState,
         suppliesPreference,
         frequency,
-        customerNote,
+        customerNote: customerNote.trim(),
         addons: addonPayload,
+        dishwashingItems: dishwashingPayload,
       });
 
       const txId = booking.transactionId || booking.id;
 
-      // Check if server recalculated total differs from quote
       if (quoteSnapshot && booking.total !== quoteSnapshot.total) {
         setPendingBooking({
           bookingId: booking.id,
@@ -374,7 +411,7 @@ export const CleaningCalculatorPage: React.FC = () => {
               Calculate & Book Professional Home Cleaning
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Transparent, real-time pricing calculated dynamically based on your room breakdown (bedrooms & parlours), options, and custom add-ons.
+              Transparent, real-time pricing calculated dynamically based on your room breakdown (bedrooms & parlours), options, dishwashing, and custom add-ons.
             </p>
           </div>
 
@@ -390,7 +427,7 @@ export const CleaningCalculatorPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Main Grid Container with Spacing */}
+      {/* Main Grid Container */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10">
           <div className="lg:col-span-2 space-y-8">
@@ -498,7 +535,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                   <div className="flex items-center gap-2.5">
                     <button
                       type="button"
-                      onClick={() => setNumberOfBedrooms(Math.max(0, numberOfBedrooms - 1))}
+                      onClick={() => setNumberOfBedrooms(Math.max(1, numberOfBedrooms - 1))}
                       className="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs"
                     >
                       <Minus className="w-3.5 h-3.5" />
@@ -738,58 +775,163 @@ export const CleaningCalculatorPage: React.FC = () => {
               </div>
             </Card>
 
-            {/* Step 4: Add-Ons */}
-            {addonsList.length > 0 && (
-              <Card className="p-6 sm:p-8 space-y-5">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
-                  <span className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-extrabold">
-                    4
-                  </span>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900">Select Add-On Services</h3>
+            {/* Step 4: Add-Ons & Quantity-Based Dishwashing Catalogue */}
+            <Card className="p-6 sm:p-8 space-y-6">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                <span className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-extrabold">
+                  4
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Select Add-On Services & Dishwashing</h3>
+              </div>
+
+              {/* Standard Addons */}
+              {addonsList.length > 0 && (
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Standard Add-Ons
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {addonsList.map((addon) => {
+                      const qty = selectedAddons[addon.id] || 0;
+                      return (
+                        <div
+                          key={addon.id}
+                          className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                            qty > 0 ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 bg-white'
+                          }`}
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">{addon.name}</p>
+                            <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                              +{formatNaira(addon.price)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleAddonQuantityChange(addon.id, -1)}
+                              disabled={qty === 0}
+                              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 flex items-center justify-center text-slate-700 font-bold text-xs"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="w-5 text-center text-xs font-extrabold text-slate-900">
+                              {qty}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleAddonQuantityChange(addon.id, 1)}
+                              className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-xs"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Official Dishwashing Catalogue Items */}
+              <div className="space-y-4 pt-4 sm:pt-5 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <Utensils className="w-4 h-4 text-emerald-600" /> Dishwashing Catalogue
+                  </label>
+                  <Badge variant="success" size="sm">
+                    Live Active Items
+                  </Badge>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                  {addonsList.map((addon) => {
-                    const qty = selectedAddons[addon.id] || 0;
-                    return (
-                      <div
-                        key={addon.id}
-                        className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
-                          qty > 0 ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 bg-white'
-                        }`}
-                      >
-                        <div>
-                          <p className="text-xs font-bold text-slate-900">{addon.name}</p>
-                          <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                            +{formatNaira(addon.price)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleAddonQuantityChange(addon.id, -1)}
-                            disabled={qty === 0}
-                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 flex items-center justify-center text-slate-700 font-bold text-xs"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="w-5 text-center text-xs font-extrabold text-slate-900">
-                            {qty}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleAddonQuantityChange(addon.id, 1)}
-                            className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-xs"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* Explanatory Unit & Set Guidance Banner */}
+                <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-2 text-xs text-slate-700 leading-relaxed">
+                  <div className="flex items-center gap-2 font-bold text-emerald-900">
+                    <Info className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <span>Dishwashing Units & Selection Rules</span>
+                  </div>
+                  <ul className="space-y-1 pl-6 list-disc text-[11px] text-slate-600">
+                    <li><strong>PIECE:</strong> Individual single kitchen item (e.g., 1 plate, 1 cup, or 1 pot).</li>
+                    <li><strong>PAIR:</strong> 2 matching pieces (e.g., 1 pair of salt & pepper shakers or matching serving pair).</li>
+                    <li><strong>SET:</strong> Complete matching bundle or service group (e.g., 6-piece dinner set or cookware set).</li>
+                  </ul>
+                  <p className="text-[11px] font-semibold text-emerald-800 pt-1">
+                    ⚠️ <strong>Rule:</strong> Items included in a selected SET should not also be selected individually.
+                  </p>
                 </div>
-              </Card>
-            )}
+
+                {/* Catalogue Loading / Error / Empty States */}
+                {isDishwashingLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-pulse">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="h-24 bg-slate-100 rounded-2xl"></div>
+                    ))}
+                  </div>
+                ) : isDishwashingError ? (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <span>
+                      Failed to load dishwashing items: {(dishwashingFetchError as any)?.message || 'Server error'}. Please refresh or try again.
+                    </span>
+                  </div>
+                ) : dishwashingCatalogue.length === 0 ? (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                    No active dishwashing items available in catalogue currently.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {dishwashingCatalogue.map((item) => {
+                      const qty = selectedDishwashingQuantities[item.id] || 0;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                            qty > 0 ? 'border-emerald-500 bg-emerald-50/40 shadow-xs' : 'border-slate-200 bg-white'
+                          }`}
+                        >
+                          <div className="space-y-1 pr-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-900">{item.name}</span>
+                              <Badge variant="info" size="sm">
+                                {item.unit}
+                              </Badge>
+                            </div>
+                            <p className="text-[11px] text-slate-500 line-clamp-2 leading-tight">
+                              {item.description}
+                            </p>
+                            <p className="text-xs font-extrabold text-emerald-700 pt-0.5">
+                              {formatNaira(item.price)} <span className="text-[10px] font-normal text-slate-400">/ {item.unit.toLowerCase()}</span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleDishwashingQuantityChange(item.id, -1)}
+                              disabled={qty === 0}
+                              className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 flex items-center justify-center text-slate-700 font-bold text-xs"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="w-6 text-center text-xs font-black text-slate-900">
+                              {qty}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDishwashingQuantityChange(item.id, 1)}
+                              disabled={qty >= 1000}
+                              className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-xs"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </Card>
 
             {/* Step 5: Schedule & Address */}
             <Card className="p-6 sm:p-8 space-y-5">
@@ -948,6 +1090,29 @@ export const CleaningCalculatorPage: React.FC = () => {
                       <span>+{formatNaira(quoteSnapshot.minimumAdjustment)}</span>
                     </div>
                   )}
+
+                  {/* Itemized Dishwashing Breakdown */}
+                  {quoteSnapshot.dishwashingItems && quoteSnapshot.dishwashingItems.length > 0 && (
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5 my-1">
+                      <p className="font-bold text-slate-800 text-[11px] flex items-center justify-between">
+                        <span>Dishwashing Items:</span>
+                        <span className="text-emerald-700 font-extrabold">
+                          +{formatNaira(quoteSnapshot.dishwashingTotal || 0)}
+                        </span>
+                      </p>
+                      <div className="space-y-1 text-[11px] text-slate-600">
+                        {quoteSnapshot.dishwashingItems.map((item, idx) => (
+                          <div key={item.itemId || idx} className="flex justify-between">
+                            <span>
+                              • {item.itemName || item.name || `Item #${item.itemId}`} x{item.quantity} ({item.unit || 'PIECE'})
+                            </span>
+                            <span>{formatNaira(item.total || item.price || 0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {quoteSnapshot.addonsTotal > 0 && (
                     <div className="flex justify-between text-slate-600 font-semibold">
                       <span>Add-ons Total</span>
@@ -1011,8 +1176,8 @@ export const CleaningCalculatorPage: React.FC = () => {
               <Button
                 type="submit"
                 variant="primary"
-                size="lg"
-                className="w-full font-bold"
+                size="md"
+                className="w-full font-bold text-xs sm:text-sm"
                 isLoading={isBookingLoading}
                 disabled={isBookingLoading || isCalculating || !!quoteError}
                 onClick={handleBookNow}

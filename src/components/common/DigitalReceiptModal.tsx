@@ -145,6 +145,23 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
                   <span>+{formatNaira(cleaningBooking.priceSnapshot.floorCharges)}</span>
                 </div>
               )}
+
+              {/* Saved Dishwashing Items Snapshot */}
+              {cleaningBooking.priceSnapshot.dishwashingItems && cleaningBooking.priceSnapshot.dishwashingItems.length > 0 && (
+                <div className="p-2 bg-slate-50 rounded border border-slate-200 my-1 space-y-1 text-[11px]">
+                  <p className="font-bold text-slate-800 flex justify-between">
+                    <span>Dishwashing Items:</span>
+                    <span className="text-emerald-700">+{formatNaira(cleaningBooking.priceSnapshot.dishwashingTotal || 0)}</span>
+                  </p>
+                  {cleaningBooking.priceSnapshot.dishwashingItems.map((item, idx) => (
+                    <div key={item.itemId || idx} className="flex justify-between text-slate-600">
+                      <span>• {item.itemName || item.name || `Item #${item.itemId}`} x{item.quantity} ({item.unit || 'PIECE'})</span>
+                      <span>{formatNaira(item.total || item.price || 0)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {!!cleaningBooking.priceSnapshot.furnishingSurcharge && cleaningBooking.priceSnapshot.furnishingSurcharge !== 0 && (
                 <div className="flex justify-between text-amber-700">
                   <span>Condition Surcharge</span>

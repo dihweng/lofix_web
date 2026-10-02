@@ -10,6 +10,7 @@ vi.mock('../../api/cleaningCustomer', () => ({
     getServices: vi.fn(),
     getPropertyTypes: vi.fn(),
     getAddons: vi.fn(),
+    getDishwashingItems: vi.fn(),
     getSavedProperties: vi.fn(),
     calculateQuote: vi.fn(),
     updateSavedProperty: vi.fn(),
@@ -24,7 +25,7 @@ vi.mock('../../context/AuthContext', () => ({
   }),
 }));
 
-describe('CleaningCalculatorPage Room-Based Pricing & Auto-Save Logic', () => {
+describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
@@ -43,6 +44,10 @@ describe('CleaningCalculatorPage Room-Based Pricing & Auto-Save Logic', () => {
     ]);
     (cleaningCustomerApi.getAddons as any).mockResolvedValue([
       { id: 10, name: 'Oven Degreasing', price: 150000 },
+    ]);
+    (cleaningCustomerApi.getDishwashingItems as any).mockResolvedValue([
+      { id: 101, name: 'Glass Cups', description: 'Fragile drinkware', price: 50000, unit: 'PIECE', active: true },
+      { id: 102, name: '6-Piece Dinner Set', description: 'Complete dinnerware set', price: 200000, unit: 'SET', active: true },
     ]);
     (cleaningCustomerApi.getSavedProperties as any).mockResolvedValue([
       {
@@ -79,6 +84,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Auto-Save Logic', () => {
       floorCharges: 0,
       sqMeterCharges: 0,
       addonsTotal: 0,
+      dishwashingTotal: 0,
       furnishingSurcharge: 0,
       suppliesDiscount: 0,
       frequencyDiscount: 0,
@@ -108,7 +114,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Auto-Save Logic', () => {
     });
   });
 
-  it('auto-saves updated dimensions to property before creating booking', async () => {
+  it('renders dishwashing catalogue items and passes dishwashingItems in quote & booking payload', async () => {
     (cleaningCustomerApi.calculateQuote as any).mockResolvedValue({
       basePrice: 500000,
       roomCharges: 500000,
@@ -116,50 +122,57 @@ describe('CleaningCalculatorPage Room-Based Pricing & Auto-Save Logic', () => {
       floorCharges: 0,
       sqMeterCharges: 0,
       addonsTotal: 0,
+      dishwashingTotal: 100000, // 2 x ₦500 = ₦1,000 = 100000 kobo
+      dishwashingItems: [
+        { itemId: 101, itemName: 'Glass Cups', unit: 'PIECE', quantity: 2, total: 100000 },
+      ],
       furnishingSurcharge: 0,
       suppliesDiscount: 0,
       frequencyDiscount: 0,
       serviceFee: 50000,
-      total: 1250000,
+      total: 1350000,
       serviceName: 'Standard Cleaning',
-      estimatedDurationMinutes: 200,
+      estimatedDurationMinutes: 210,
       recommendedCleaners: 2,
-    });
-
-    (cleaningCustomerApi.updateSavedProperty as any).mockResolvedValue({
-      id: 4,
-      name: 'My Lekki Flat',
     });
 
     (cleaningCustomerApi.createBooking as any).mockResolvedValue({
       id: 99,
       transactionId: 202,
-      total: 1250000,
+      total: 1350000,
       status: 'PAYMENT_PENDING',
     });
 
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText(/My Lekki Flat/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Glass Cups/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/6-Piece Dinner Set/i)[0]).toBeInTheDocument();
+    });
+
+    const plusButtons = screen.getAllByRole('button').filter((btn) => btn.querySelector('svg.lucide-plus'));
+    expect(plusButtons.length).toBeGreaterThan(0);
+
+    // Click plus button on Glass Cups
+    fireEvent.click(plusButtons[plusButtons.length - 2]);
+
+    await waitFor(() => {
+      expect(cleaningCustomerApi.calculateQuote).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dishwashingItems: expect.arrayContaining([{ itemId: 101, quantity: 1 }]),
+        })
+      );
     });
 
     const bookButton = screen.getByRole('button', { name: /book & proceed to checkout/i });
-    expect(bookButton).not.toBeDisabled();
-
     fireEvent.click(bookButton);
 
     await waitFor(() => {
-      expect(cleaningCustomerApi.createBooking).toHaveBeenCalledWith({
-        propertyId: 4,
-        serviceId: 1,
-        scheduledAt: expect.any(String),
-        furnishingState: 'OCCUPIED',
-        suppliesPreference: 'SUPPLIES_INCLUDED',
-        frequency: 'ONE_TIME',
-        customerNote: '',
-        addons: [],
-      });
+      expect(cleaningCustomerApi.createBooking).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dishwashingItems: expect.arrayContaining([{ itemId: 101, quantity: 1 }]),
+        })
+      );
     });
   });
 

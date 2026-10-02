@@ -30,6 +30,18 @@ export interface SavedProperty {
   updatedAt?: string;
 }
 
+export interface DishwashingItem {
+  id: number;
+  name: string;
+  description: string;
+  price: number; // kobo
+  unit: 'PIECE' | 'PAIR' | 'SET';
+  isActive?: boolean;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface QuoteRequestPayload {
   serviceId: number;
   propertyTypeId: number;
@@ -43,6 +55,7 @@ export interface QuoteRequestPayload {
   suppliesPreference?: SuppliesPreference;
   frequency?: CleaningFrequency;
   addons?: Array<{ addonId: number; quantity: number }>;
+  dishwashingItems?: Array<{ itemId: number; quantity: number }>;
 }
 
 export interface CreateCleaningBookingPayload {
@@ -54,6 +67,7 @@ export interface CreateCleaningBookingPayload {
   frequency?: CleaningFrequency;
   customerNote?: string;
   addons?: Array<{ addonId: number; quantity: number }>;
+  dishwashingItems?: Array<{ itemId: number; quantity: number }>;
 }
 
 export interface ReviewSubmissionPayload {
@@ -102,6 +116,13 @@ export const cleaningCustomerApi = {
       const res = await apiClient.get<Addon[]>('/cleaning/admin/addons');
       return res.data;
     }
+  },
+
+  getDishwashingItems: async (limit = 50, offset = 0): Promise<DishwashingItem[]> => {
+    const res = await apiClient.get<DishwashingItem[]>('/cleaning/dishwashing/items', {
+      params: { limit, offset },
+    });
+    return res.data;
   },
 
   calculateQuote: async (payload: QuoteRequestPayload): Promise<PriceSnapshot> => {

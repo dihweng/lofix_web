@@ -1,205 +1,300 @@
 import { apiClient } from './axios';
 
-export type UtilityCategory = 'ELECTRICITY' | 'DATA' | 'AIRTIME' | 'CABLE_TV';
+export type UtilityCategory = 'AIRTIME' | 'DATA' | 'CABLE' | 'ELECTRICITY';
 
-export interface ElectricityDisco {
-  id: string;
+export interface VtpassService {
+  serviceID: string;
   name: string;
-  shortCode: string;
-  statesServed: string[];
+  category?: string;
+  image?: string;
+  minimium_amount?: string | number;
+  maximum_amount?: string | number;
 }
 
-export interface MeterVerificationResult {
-  meterNumber: string;
-  customerName: string;
+export interface VtpassVariation {
+  variation_code: string;
+  name: string;
+  variation_amount: string | number;
+  fixedPrice?: string;
+}
+
+export interface VtpassVerifyPayload {
+  serviceID: string;
+  target: string;
+  meterType?: 'prepaid' | 'postpaid';
+}
+
+export interface VtpassVerifyResult {
+  customerName?: string;
+  customer_Name?: string;
+  Customer_Name?: string;
   address?: string;
-  disco: string;
-  meterType: 'prepaid' | 'postpaid';
-  verified: boolean;
-}
-
-export interface DataPlan {
-  id: string;
-  network: 'MTN' | 'AIRTEL' | 'GLO' | '9MOBILE';
-  name: string; // e.g. "1.5GB Monthly"
-  allowance: string; // "1.5GB"
-  validity: string; // "30 Days"
-  price: number; // kobo
-}
-
-export interface CableTvPackage {
-  id: string;
-  provider: 'DSTV' | 'GOTV' | 'STARTIMES' | 'SHOWMAX';
-  name: string; // e.g. "DSTV Compact"
-  price: number; // kobo
-  description?: string;
-}
-
-export interface SmartcardVerificationResult {
-  smartcardNumber: string;
-  customerName: string;
-  provider: string;
   currentBouquet?: string;
   dueDate?: string;
   verified: boolean;
+  message?: string;
 }
 
-export interface PurchaseUtilityPayload {
-  category: UtilityCategory;
-  providerId: string; // e.g. "IKEDC", "MTN", "DSTV"
-  accountNumber: string; // Meter number, Phone number, or Smartcard number
+export interface CreateVtpassOrderPayload {
+  idempotencyKey: string;
+  type: UtilityCategory;
+  serviceID: string;
+  target: string; // meter number, phone, smartcard
   meterType?: 'prepaid' | 'postpaid';
-  planId?: string; // For Data or Cable TV
-  amount: number; // kobo
-  customerName?: string;
+  phone?: string; // contact phone for DATA/CABLE/ELECTRICITY
+  amount?: number; // kobo integer (required for AIRTIME & ELECTRICITY, omitted for DATA & CABLE)
+  variationCode?: string; // required for DATA & CABLE
+  subscriptionType?: 'change' | 'renew'; // optional for CABLE
 }
 
-export interface UtilityTransaction {
-  id: number;
-  reference: string;
+export interface VtpassOrderResult {
+  orderId: string;
   transactionId: number;
-  category: UtilityCategory;
-  providerId: string;
-  providerName: string;
-  accountNumber: string;
-  customerName?: string;
   amount: number; // kobo
-  status: 'PENDING' | 'SUCCESSFUL' | 'FAILED';
+  fee?: number; // kobo
+  totalAmount?: number; // kobo
+  status: 'READY' | 'PENDING' | 'SUCCESS' | 'FAILED' | string;
+  reference?: string;
+  message?: string;
+}
+
+export interface VtpassOrderDetail {
+  orderId: string;
+  transactionId: number;
+  type: UtilityCategory | string;
+  serviceID: string;
+  serviceName?: string;
+  target: string;
+  phone?: string;
+  amount: number; // kobo
+  fee?: number; // kobo
+  totalAmount?: number; // kobo
+  status: 'READY' | 'PENDING' | 'SUCCESS' | 'FAILED' | string;
+  paymentStatus?: string;
+  deliveryStatus?: string;
+  message?: string;
+  canRetry?: boolean;
+  retryAfterSeconds?: number;
+  requiresSupport?: boolean;
+  supportReason?: 'TOKEN_MISSING' | 'DELIVERY_DELAYED' | 'DELIVERY_FAILED' | string;
+  reference?: string;
+  providerReference?: string;
   token?: string; // Generated electricity token e.g. "4829-1029-3829-4820"
   units?: string; // e.g. "48.5 kWh"
-  createdAt: string;
+  responseDescription?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ElectricityState {
+  code: string;
+  name: string;
+  providerIds: string[];
+}
+
+export interface ElectricityProvider {
+  serviceID: string;
+  name: string;
+  stateCodes: string[];
+  stateCount: number;
+  available: boolean;
+  unavailableReason?: string;
+  coverageNote?: string;
+}
+
+export interface ElectricityCatalogue {
+  states: ElectricityState[];
+  providers: ElectricityProvider[];
+  processor?: string;
+  environment?: string;
+  coverageNote?: string;
 }
 
 export const utilitiesApi = {
-  getElectricityDiscos: async (): Promise<ElectricityDisco[]> => {
-    try {
-      const res = await apiClient.get<ElectricityDisco[]>('/utilities/electricity/discos');
-      return res.data;
-    } catch {
-      return [
-        { id: 'IKEDC', name: 'Ikeja Electric (IKEDC)', shortCode: 'Ikeja', statesServed: ['Lagos'] },
-        { id: 'EKEDC', name: 'Eko Electricity (EKEDC)', shortCode: 'Eko', statesServed: ['Lagos'] },
-        { id: 'AEDC', name: 'Abuja Electricity (AEDC)', shortCode: 'Abuja', statesServed: ['FCT', 'Nasarawa', 'Niger', 'Kogi'] },
-        { id: 'IBEDC', name: 'Ibadan Electricity (IBEDC)', shortCode: 'Ibadan', statesServed: ['Oyo', 'Ogun', 'Osun', 'Kwara'] },
-        { id: 'KEDCO', name: 'Kano Electricity (KEDCO)', shortCode: 'Kano', statesServed: ['Kano', 'Katsina', 'Jigawa'] },
-        { id: 'PHED', name: 'Port Harcourt Electricity (PHED)', shortCode: 'Port Harcourt', statesServed: ['Rivers', 'Bayelsa', 'Cross River', 'Akwa Ibom'] },
-        { id: 'EEDC', name: 'Enugu Electricity (EEDC)', shortCode: 'Enugu', statesServed: ['Enugu', 'Abia', 'Anambra', 'Ebonyi', 'Imo'] },
-        { id: 'KAEDCO', name: 'Kaduna Electric (KAEDCO)', shortCode: 'Kaduna', statesServed: ['Kaduna', 'Sokoto', 'Kebbi', 'Zamfara'] },
-      ];
-    }
-  },
-
-  verifyMeterNumber: async (
-    disco: string,
-    meterNumber: string,
-    type: 'prepaid' | 'postpaid'
-  ): Promise<MeterVerificationResult> => {
-    try {
-      const res = await apiClient.post<MeterVerificationResult>('/utilities/electricity/verify-meter', {
-        disco,
-        meterNumber,
-        type,
-      });
-      return res.data;
-    } catch {
-      return {
-        meterNumber,
-        customerName: 'Verified Meter Holder',
-        address: '15 Admiralty Way, Lekki Phase 1, Lagos',
-        disco,
-        meterType: type,
-        verified: true,
-      };
-    }
-  },
-
-  getDataPlans: async (network?: string): Promise<DataPlan[]> => {
-    try {
-      const res = await apiClient.get<DataPlan[]>('/utilities/data/plans', {
-        params: { network },
-      });
-      return res.data;
-    } catch {
-      const plans: DataPlan[] = [
-        { id: 'MTN-1GB', network: 'MTN', name: 'MTN 1GB SME (30 Days)', allowance: '1GB', validity: '30 Days', price: 35000 },
-        { id: 'MTN-2.5GB', network: 'MTN', name: 'MTN 2.5GB Direct (30 Days)', allowance: '2.5GB', validity: '30 Days', price: 100000 },
-        { id: 'MTN-5GB', network: 'MTN', name: 'MTN 5GB Monthly', allowance: '5GB', validity: '30 Days', price: 150000 },
-        { id: 'MTN-10GB', network: 'MTN', name: 'MTN 10GB Monthly', allowance: '10GB', validity: '30 Days', price: 300000 },
-        { id: 'MTN-20GB', network: 'MTN', name: 'MTN 20GB Monthly', allowance: '20GB', validity: '30 Days', price: 550000 },
-        { id: 'AIRTEL-1.5GB', network: 'AIRTEL', name: 'Airtel 1.5GB (30 Days)', allowance: '1.5GB', validity: '30 Days', price: 100000 },
-        { id: 'AIRTEL-5GB', network: 'AIRTEL', name: 'Airtel 5GB Monthly', allowance: '5GB', validity: '30 Days', price: 150000 },
-        { id: 'AIRTEL-10GB', network: 'AIRTEL', name: 'Airtel 10GB Monthly', allowance: '10GB', validity: '30 Days', price: 300000 },
-        { id: 'GLO-2.9GB', network: 'GLO', name: 'Glo 2.9GB Special (30 Days)', allowance: '2.9GB', validity: '30 Days', price: 100000 },
-        { id: 'GLO-7.7GB', network: 'GLO', name: 'Glo 7.7GB Monthly', allowance: '7.7GB', validity: '30 Days', price: 200000 },
-        { id: '9MOB-2GB', network: '9MOBILE', name: '9mobile 2GB (30 Days)', allowance: '2GB', validity: '30 Days', price: 120000 },
-        { id: '9MOB-7GB', network: '9MOBILE', name: '9mobile 7GB Monthly', allowance: '7GB', validity: '30 Days', price: 250000 },
-      ];
-      return plans.filter((p) => !network || p.network === network.toUpperCase());
-    }
-  },
-
-  getCableTvPackages: async (provider?: string): Promise<CableTvPackage[]> => {
-    try {
-      const res = await apiClient.get<CableTvPackage[]>('/utilities/cabletv/packages', {
-        params: { provider },
-      });
-      return res.data;
-    } catch {
-      const packages: CableTvPackage[] = [
-        { id: 'DSTV-PADI', provider: 'DSTV', name: 'DSTV Padi', price: 360000, description: 'Over 45 channels' },
-        { id: 'DSTV-YANGA', provider: 'DSTV', name: 'DSTV Yanga', price: 510000, description: 'Over 85 channels' },
-        { id: 'DSTV-CONFAM', provider: 'DSTV', name: 'DSTV Confam', price: 930000, description: 'Over 105 channels' },
-        { id: 'DSTV-COMPACT', provider: 'DSTV', name: 'DSTV Compact', price: 1570000, description: 'Over 130 channels + Premier League' },
-        { id: 'DSTV-PREMIUM', provider: 'DSTV', name: 'DSTV Premium', price: 2950000, description: 'All channels + SuperSport' },
-        { id: 'GOTV-SMALLIE', provider: 'GOTV', name: 'GOTV Smallie', price: 150000, description: 'Over 35 channels' },
-        { id: 'GOTV-JINLI', provider: 'GOTV', name: 'GOTV Jinli', price: 330000, description: 'Over 45 channels' },
-        { id: 'GOTV-JOLLI', provider: 'GOTV', name: 'GOTV Jolli', price: 480000, description: 'Over 65 channels' },
-        { id: 'GOTV-MAX', provider: 'GOTV', name: 'GOTV Max', price: 720000, description: 'Over 75 channels' },
-        { id: 'GOTV-SUPA', provider: 'GOTV', name: 'GOTV Supa+', price: 1570000, description: 'All channels + Select Matches' },
-        { id: 'STARTIMES-BASIC', provider: 'STARTIMES', name: 'Startimes Basic', price: 260000, description: 'Over 80 channels' },
-        { id: 'STARTIMES-CLASSIC', provider: 'STARTIMES', name: 'Startimes Classic', price: 380000, description: 'Over 100 channels' },
-      ];
-      return packages.filter((p) => !provider || p.provider === provider.toUpperCase());
-    }
-  },
-
-  verifySmartcardNumber: async (
-    provider: string,
-    smartcardNumber: string
-  ): Promise<SmartcardVerificationResult> => {
-    try {
-      const res = await apiClient.post<SmartcardVerificationResult>('/utilities/cabletv/verify-smartcard', {
-        provider,
-        smartcardNumber,
-      });
-      return res.data;
-    } catch {
-      return {
-        smartcardNumber,
-        customerName: 'Verified Decoder Owner',
-        provider,
-        currentBouquet: `${provider} Active Bouquet`,
-        verified: true,
-      };
-    }
-  },
-
-  purchaseUtility: async (
-    payload: PurchaseUtilityPayload
-  ): Promise<{ transactionId: number; reference: string; message: string }> => {
-    const res = await apiClient.post<{ transactionId: number; reference: string; message: string }>(
-      '/utilities/purchase',
-      payload
-    );
+  // 0. Fetch Electricity Catalogue: GET /bills/vtpass/electricity/catalogue
+  getElectricityCatalogue: async (): Promise<ElectricityCatalogue> => {
+    const res = await apiClient.get<ElectricityCatalogue>('/bills/vtpass/electricity/catalogue');
     return res.data;
   },
 
-  getUserUtilityTransactions: async (): Promise<UtilityTransaction[]> => {
+  // 1. Fetch provider services: GET /bills/vtpass/services/{type}
+  getVtpassServices: async (type: UtilityCategory): Promise<VtpassService[]> => {
     try {
-      const res = await apiClient.get<UtilityTransaction[]>('/utilities/my-transactions');
+      const res = await apiClient.get<VtpassService[]>(`/bills/vtpass/services/${type}`);
       return res.data;
     } catch {
-      return [];
+      if (type === 'ELECTRICITY') {
+        return [
+          { serviceID: 'ikeja-electric', name: 'Ikeja Electric (IKEDC)' },
+          { serviceID: 'portharcourt-electric', name: 'Port Harcourt Electric (PHED)' },
+          { serviceID: 'aba-electric', name: 'Aba Power (APLE)' },
+        ];
+      } else if (type === 'DATA') {
+        return [
+          { serviceID: 'mtn-data', name: 'MTN Data' },
+          { serviceID: 'airtel-data', name: 'Airtel Data' },
+          { serviceID: 'glo-data', name: 'Glo Data' },
+          { serviceID: 'etisalat-data', name: '9mobile Data' },
+        ];
+      } else if (type === 'CABLE') {
+        return [
+          { serviceID: 'dstv', name: 'DSTV Subscription' },
+          { serviceID: 'gotv', name: 'GOTV Subscription' },
+          { serviceID: 'startimes', name: 'Startimes Subscription' },
+          { serviceID: 'showmax', name: 'Showmax' },
+        ];
+      } else {
+        return [
+          { serviceID: 'mtn', name: 'MTN Airtime' },
+          { serviceID: 'airtel', name: 'Airtel Airtime' },
+          { serviceID: 'glo', name: 'Glo Airtime' },
+          { serviceID: 'etisalat', name: '9mobile Airtime' },
+        ];
+      }
     }
+  },
+
+  // 2. Fetch data/TV plans: GET /bills/vtpass/variations/{type}/{serviceID}
+  getVtpassVariations: async (
+    type: 'DATA' | 'CABLE',
+    serviceID: string
+  ): Promise<VtpassVariation[]> => {
+    try {
+      const res = await apiClient.get<VtpassVariation[]>(
+        `/bills/vtpass/variations/${type}/${serviceID}`
+      );
+      return res.data;
+    } catch {
+      if (type === 'DATA') {
+        return [
+          { variation_code: 'mtn-1gb', name: '1.0 GB (30 Days)', variation_amount: 350 },
+          { variation_code: 'mtn-2.5gb', name: '2.5 GB (30 Days)', variation_amount: 1000 },
+          { variation_code: 'mtn-5gb', name: '5.0 GB Monthly', variation_amount: 1500 },
+          { variation_code: 'mtn-10gb', name: '10.0 GB Monthly', variation_amount: 3000 },
+          { variation_code: 'mtn-20gb', name: '20.0 GB Monthly', variation_amount: 5500 },
+        ];
+      } else {
+        return [
+          { variation_code: 'dstv-padi', name: 'DSTV Padi', variation_amount: 3600 },
+          { variation_code: 'dstv-yanga', name: 'DSTV Yanga', variation_amount: 5100 },
+          { variation_code: 'dstv-confam', name: 'DSTV Confam', variation_amount: 9300 },
+          { variation_code: 'dstv-compact', name: 'DSTV Compact', variation_amount: 15700 },
+          { variation_code: 'dstv-premium', name: 'DSTV Premium', variation_amount: 29500 },
+        ];
+      }
+    }
+  },
+
+  // 3. Target verification: POST /bills/vtpass/verify
+  verifyVtpassTarget: async (payload: VtpassVerifyPayload): Promise<VtpassVerifyResult> => {
+    const res = await apiClient.post<VtpassVerifyResult>('/bills/vtpass/verify', payload);
+    const data = res.data;
+    const name = data.customerName || data.customer_Name || data.Customer_Name || 'Verified Account Holder';
+    return { ...data, customerName: name, verified: data.verified !== false };
+  },
+
+  // 4. Create unpaid order: POST /bills/vtpass/orders
+  createVtpassOrder: async (payload: CreateVtpassOrderPayload): Promise<VtpassOrderResult> => {
+    const res = await apiClient.post<VtpassOrderResult>('/bills/vtpass/orders', payload);
+    return res.data;
+  },
+
+  // 5. Track service delivery: GET /bills/vtpass/orders/{orderId}
+  getVtpassOrderStatus: async (orderId: string): Promise<VtpassOrderDetail> => {
+    const res = await apiClient.get<VtpassOrderDetail>(`/bills/vtpass/orders/${orderId}`);
+    return res.data;
+  },
+
+  // 5b. Retry status check: POST /bills/vtpass/orders/{orderId}/retry
+  retryVtpassOrder: async (orderId: string): Promise<VtpassOrderDetail> => {
+    const res = await apiClient.post<VtpassOrderDetail>(`/bills/vtpass/orders/${orderId}/retry`, {});
+    return res.data;
+  },
+
+  // 6. User order history: GET /bills/vtpass/my-orders
+  getUserVtpassOrders: async (): Promise<VtpassOrderDetail[]> => {
+    let rawList: any[] = [];
+    try {
+      const res = await apiClient.get<any[]>('/bills/vtpass/my-orders');
+      if (Array.isArray(res.data)) {
+        rawList = res.data;
+      }
+    } catch {
+      rawList = [];
+    }
+
+    return rawList.map((item: any) => {
+      const orderId =
+        item.orderId ||
+        item.order_id ||
+        item.reference ||
+        item.ref ||
+        (item.id ? `${item.id}` : 'ORD-101');
+
+      const transactionId = item.transactionId || item.transaction_id || item.id || 0;
+      const type = item.type || item.category || item.bill_purchase?.type || 'BILL';
+
+      const serviceID =
+        item.serviceID ||
+        item.service_id ||
+        item.providerId ||
+        item.provider_id ||
+        item.serviceName ||
+        item.description ||
+        'VTpass Utility';
+
+      const serviceName =
+        item.serviceName ||
+        item.service_name ||
+        item.providerName ||
+        item.provider_name ||
+        item.name ||
+        serviceID;
+
+      const target =
+        item.target ||
+        item.accountNumber ||
+        item.account_number ||
+        item.phone ||
+        item.bill_purchase?.target ||
+        'Account';
+
+      const amount = item.amount || item.amountKobo || (item.amountNaira ? item.amountNaira * 100 : 0);
+
+      const status =
+        item.status === 'SUCCESSFUL' || item.status === 'PAID' || item.status === 'COMPLETED'
+          ? 'SUCCESS'
+          : item.status === 'FAILED'
+          ? 'FAILED'
+          : item.status || 'PENDING';
+
+      const token = item.token || item.bill_purchase?.token || item.details?.token;
+      const units = item.units || item.bill_purchase?.units || item.details?.units;
+
+      return {
+        orderId,
+        transactionId,
+        type,
+        serviceID,
+        serviceName,
+        target,
+        phone: item.phone,
+        amount,
+        status,
+        paymentStatus: item.paymentStatus || item.payment_status,
+        deliveryStatus: item.deliveryStatus || item.delivery_status || status,
+        message: item.message,
+        canRetry: item.canRetry ?? item.can_retry,
+        retryAfterSeconds: item.retryAfterSeconds ?? item.retry_after_seconds,
+        requiresSupport: item.requiresSupport ?? item.requires_support,
+        supportReason: item.supportReason || item.support_reason,
+        reference: item.reference || item.ref,
+        providerReference: item.providerReference || item.provider_reference || item.providerReferenceId,
+        token,
+        units,
+        responseDescription: item.responseDescription || item.response_description,
+        createdAt: item.createdAt || item.created_at || item.date,
+      };
+    });
   },
 };

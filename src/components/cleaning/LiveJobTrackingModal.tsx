@@ -98,12 +98,11 @@ export const LiveJobTrackingModal: React.FC<LiveJobTrackingModalProps> = ({
           </div>
 
           <Button
-            variant="outline"
+            variant="dark"
             size="sm"
             onClick={() => refetch()}
             isLoading={isLoading}
             leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-            className="text-white border-slate-700 hover:bg-slate-800"
           >
             Refresh Status
           </Button>

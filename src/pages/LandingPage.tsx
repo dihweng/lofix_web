@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CustomerLayout } from '../components/layout/CustomerLayout';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
+import { QuickServiceModal } from '../components/cleaning/QuickServiceModal';
 import {
   Sparkles,
   Building2,
@@ -13,10 +14,16 @@ import {
   Clock,
   ArrowRight,
   CheckCircle2,
+  UtensilsCrossed,
+  Shirt,
 } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [quickServiceModal, setQuickServiceModal] = useState<{
+    isOpen: boolean;
+    type: 'dishwashing' | 'laundry';
+  }>({ isOpen: false, type: 'dishwashing' });
 
   return (
     <CustomerLayout>
@@ -265,6 +272,81 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* QUICK HOME SERVICES SECTION (STANDALONE DISHWASHING & LAUNDRY) */}
+      <section className="bg-slate-100 py-16 px-4 sm:px-6 lg:px-8 border-y border-slate-200">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <Badge variant="success" size="md">
+              Express Home Chores
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
+              Quick Standalone Home Services
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Need just a quick fix? Request standalone dishwashing or laundry wash-and-drop home service instantly.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <Card className="p-6 space-y-4 border-slate-200 hover:border-emerald-500 transition-all flex flex-col justify-between bg-white">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                  <UtensilsCrossed className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 font-display">
+                  Dishwashing-Only Home Service
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Have a pile of accumulated dishes and kitchenware? A professional cleaner will come directly to your home to wash, rinse, dry, and sanitize all kitchen utensils.
+                </p>
+                <div className="flex items-center justify-between text-xs pt-2">
+                  <span className="font-bold text-slate-700">Starting from</span>
+                  <span className="font-black text-emerald-700 text-sm">₦3,500 / load</span>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full font-bold mt-4"
+                onClick={() => setQuickServiceModal({ isOpen: true, type: 'dishwashing' })}
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+              >
+                Request Dishwashing Service
+              </Button>
+            </Card>
+
+            <Card className="p-6 space-y-4 border-slate-200 hover:border-emerald-500 transition-all flex flex-col justify-between bg-white">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center font-bold">
+                  <Shirt className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 font-display">
+                  Quick Laundry Wash & Spin
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  We wash and spin-dry your clothes at your home (no waiting for all-day sun drying; you pick, hang, and fold yourself).
+                </p>
+                <div className="flex items-center justify-between text-xs pt-2">
+                  <span className="font-bold text-slate-700">Starting from</span>
+                  <span className="font-black text-sky-700 text-sm">₦5,000 / basket</span>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full font-bold mt-4 bg-sky-600 hover:bg-sky-700 border-sky-600"
+                onClick={() => setQuickServiceModal({ isOpen: true, type: 'laundry' })}
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+              >
+                Request Laundry Service
+              </Button>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -319,6 +401,14 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <QuickServiceModal
+        isOpen={quickServiceModal.isOpen}
+        serviceType={quickServiceModal.type}
+        onClose={() => setQuickServiceModal({ isOpen: false, type: 'dishwashing' })}
+      />
     </CustomerLayout>
   );
 };
+
+export default LandingPage;

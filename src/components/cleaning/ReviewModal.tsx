@@ -66,7 +66,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
             className="p-1 focus:outline-none transition-transform hover:scale-110"
           >
             <Star
-              className={`w-6 h-6 ${
+              className={`w-5 h-5 ${
                 star <= value
                   ? 'text-amber-400 fill-amber-400'
                   : 'text-slate-300 fill-slate-100'
@@ -83,7 +83,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`Submit Post-Service Review #${booking.reference || booking.id}`}
-      maxWidth="md"
+      maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMsg && (
@@ -111,24 +111,24 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1 text-center">
-            <span className="font-bold text-slate-800 block">Cleanliness</span>
-            <div className="flex justify-center">
+        <div className="space-y-3 text-xs">
+          <div className="p-4 bg-white border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="font-bold text-slate-800 text-sm">Cleanliness</span>
+            <div className="flex justify-center sm:justify-end">
               {renderStars(cleanlinessRating, setCleanlinessRating)}
             </div>
           </div>
 
-          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1 text-center">
-            <span className="font-bold text-slate-800 block">Punctuality</span>
-            <div className="flex justify-center">
+          <div className="p-4 bg-white border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="font-bold text-slate-800 text-sm">Punctuality</span>
+            <div className="flex justify-center sm:justify-end">
               {renderStars(punctualityRating, setPunctualityRating)}
             </div>
           </div>
 
-          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1 text-center">
-            <span className="font-bold text-slate-800 block">Agent Conduct</span>
-            <div className="flex justify-center">
+          <div className="p-4 bg-white border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <span className="font-bold text-slate-800 text-sm">Agent Conduct</span>
+            <div className="flex justify-center sm:justify-end">
               {renderStars(professionalismRating, setProfessionalismRating)}
             </div>
           </div>

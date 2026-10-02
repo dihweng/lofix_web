@@ -39,6 +39,17 @@ export interface PriceSnapshotAddon {
   price: number;
 }
 
+export interface PriceSnapshotDishwashingItem {
+  itemId: number;
+  itemName?: string;
+  name?: string;
+  unit?: 'PIECE' | 'PAIR' | 'SET' | string;
+  quantity: number;
+  unitPrice?: number;
+  price?: number;
+  total?: number;
+}
+
 export interface PriceSnapshot {
   basePrice: number;
   roomCharges: number;
@@ -52,6 +63,8 @@ export interface PriceSnapshot {
   frequencyDiscount?: number; // negative integer kobo
   serviceFee: number;
   addonsTotal: number;
+  dishwashingTotal?: number;
+  dishwashingItems?: PriceSnapshotDishwashingItem[];
   total: number;
   serviceName: string;
   estimatedDurationMinutes?: number;

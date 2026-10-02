@@ -10,6 +10,7 @@ export interface Account {
   role: 'Admin' | 'User' | 'Agent';
   isVerified?: boolean;
   activated?: boolean;
+  isPhoneVerified?: boolean;
   created?: string;
   updated?: string;
 }
@@ -40,6 +41,17 @@ export interface UpdateProfilePayload {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
+  requiresLogin?: boolean;
 }
 
 export const authApi = {
@@ -79,5 +91,25 @@ export const authApi = {
   updateProfile: async (id: number, payload: UpdateProfilePayload): Promise<Account> => {
     const response = await apiClient.put<Account>(`/accounts/${id}`, payload);
     return response.data;
+  },
+
+  changePassword: async (payload: ChangePasswordPayload): Promise<ChangePasswordResponse> => {
+    const response = await apiClient.post<ChangePasswordResponse>('/accounts/change-password', payload);
+    return response.data;
+  },
+
+  deleteAccount: async (id: number): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ message: string }>(`/accounts/${id}`);
+    return response.data;
+  },
+
+  requestPhoneOtp: async (): Promise<{ message: string }> => {
+    const res = await apiClient.post<{ message: string }>('/accounts/request-phone-otp');
+    return res.data;
+  },
+
+  verifyPhoneOtp: async (otp: string): Promise<{ message: string; isPhoneVerified: boolean }> => {
+    const res = await apiClient.post<{ message: string; isPhoneVerified: boolean }>('/accounts/verify-phone-otp', { otp });
+    return res.data;
   },
 };
