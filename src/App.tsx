@@ -11,6 +11,8 @@ import { ListingDetailPage } from './pages/listings/ListingDetailPage';
 import { CleaningCalculatorPage } from './pages/cleaning/CleaningCalculatorPage';
 import { UtilitiesPage } from './pages/utilities/UtilitiesPage';
 import { UserDashboardPage } from './pages/dashboard/UserDashboardPage';
+import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
+import { TermsOfServicePage } from './pages/legal/TermsOfServicePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +36,8 @@ export const App: React.FC = () => {
             <Route path="/cleaning" element={<CleaningCalculatorPage />} />
             <Route path="/utilities" element={<UtilitiesPage />} />
             <Route path="/dashboard" element={<UserDashboardPage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
