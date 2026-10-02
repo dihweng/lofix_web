@@ -24,16 +24,24 @@ export const configureAxiosAuth = (
   logoutHandler = onLogout;
 };
 
-// Request Interceptor: Inject JWT token if available
+// Request Interceptor: Inject JWT token if available & Log Request Details
 apiClient.interceptors.request.use((config) => {
   const token = tokenGetter?.();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  console.group(`🌐 [API Request] ${config.method?.toUpperCase()} ${config.url}`);
+  console.log('Request Headers:', config.headers);
+  if (config.data) {
+    console.log('Request Body:', config.data);
+  }
+  console.groupEnd();
+
   return config;
 });
 
-// Response Interceptor: Handle 401 & Silent Refresh
+// Response Interceptor: Handle 401, Silent Refresh, & Log Response Details
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
@@ -52,8 +60,21 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.group(`✅ [API Response] ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
+    console.log('Response Headers:', response.headers);
+    console.log('Response Body:', response.data);
+    console.groupEnd();
+    return response;
+  },
   async (error) => {
+    console.group(`❌ [API Error] ${error.response?.status || 'Network Error'} ${error.config?.method?.toUpperCase()} ${error.config?.url}`);
+    console.log('Error Message:', error.message);
+    if (error.response?.data) {
+      console.log('Error Data Body:', error.response.data);
+    }
+    console.groupEnd();
+
     const originalRequest = error.config;
 
     // Do not attempt refresh on login or refresh endpoints itself

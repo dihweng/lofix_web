@@ -47,12 +47,36 @@ export interface CreateVtpassOrderPayload {
   subscriptionType?: 'change' | 'renew'; // optional for CABLE
 }
 
+export interface ElectricityReceipt {
+  receiptNumber?: string;
+  customerName?: string;
+  customerAddress?: string;
+  units?: string;
+  tariff?: number | string;
+  taxAmount?: number | string; // kobo
+  debtAmount?: number | string; // kobo
+  tokenAmount?: number | string; // kobo
+  fixedChargeAmount?: number | string; // kobo
+  amountUnit?: string;
+  currency?: string;
+}
+
+export interface ElectricityOrderInfo {
+  customerName?: string;
+  customerAddress?: string;
+  meterNumber?: string;
+  meterType?: string;
+  serviceID?: string;
+  receipt?: ElectricityReceipt | null;
+}
+
 export interface VtpassOrderResult {
   orderId: string;
   transactionId: number;
   amount: number; // kobo
   fee?: number; // kobo
   totalAmount?: number; // kobo
+  electricity?: ElectricityOrderInfo | null;
   status: 'READY' | 'PENDING' | 'SUCCESS' | 'FAILED' | string;
   reference?: string;
   message?: string;
@@ -69,6 +93,7 @@ export interface VtpassOrderDetail {
   amount: number; // kobo
   fee?: number; // kobo
   totalAmount?: number; // kobo
+  electricity?: ElectricityOrderInfo | null;
   status: 'READY' | 'PENDING' | 'SUCCESS' | 'FAILED' | string;
   paymentStatus?: string;
   deliveryStatus?: string;

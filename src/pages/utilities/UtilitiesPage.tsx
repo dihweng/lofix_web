@@ -18,6 +18,7 @@ import { formatNaira } from '../../utils/money';
 import { useAuth } from '../../context/AuthContext';
 import { PlanSelectorModal } from '../../components/utilities/PlanSelectorModal';
 import { PaymentModal } from '../../components/payment/PaymentModal';
+import { ElectricityReceiptModal } from '../../components/utilities/ElectricityReceiptModal';
 import {
   Zap,
   Wifi,
@@ -205,6 +206,8 @@ export const UtilitiesPage: React.FC = () => {
   const [isReviewingOrder, setIsReviewingOrder] = useState(false);
   const [orderPreview, setOrderPreview] = useState<VtpassOrderResult | null>(null);
   const [checkoutTransactionId, setCheckoutTransactionId] = useState<number | null>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [copiedToken, setCopiedToken] = useState(false);
 
   // Modals & Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -406,12 +409,19 @@ export const UtilitiesPage: React.FC = () => {
       });
 
       setOrderPreview(orderResult);
-      addToast('success', `Order #${orderResult.orderId} created successfully! Please review pricing.`);
+      addToast('success', `Order #${orderResult.orderId} created successfully! Please review server pricing.`);
     } catch (err: any) {
       addToast('error', err.response?.data?.message || err.message || 'Order creation failed.');
     } finally {
       setIsReviewingOrder(false);
     }
+  };
+
+  const handleCopyToken = (token: string) => {
+    navigator.clipboard.writeText(token);
+    setCopiedToken(true);
+    addToast('success', 'Token copied to clipboard!');
+    setTimeout(() => setCopiedToken(false), 2000);
   };
 
   const selectedProviderObj = electricityCatalogue?.providers?.find(
@@ -1100,27 +1110,34 @@ export const UtilitiesPage: React.FC = () => {
 
                 {activeCategory === 'ELECTRICITY' && !orderPreview && (
                   <div className="flex justify-between text-slate-600">
-                    <span>Token Amount</span>
+                    <span>Electricity / Principal</span>
                     <span className="font-bold text-slate-900">{formatNaira(electricityAmountNaira * 100)}</span>
                   </div>
                 )}
 
                 {orderPreview && (
-                  <div className="space-y-1.5 pt-1">
+                  <div className="space-y-2 pt-1">
+                    {orderPreview.electricity && (
+                      <div className="p-2.5 bg-white rounded-lg border border-slate-200 text-[11px] space-y-0.5">
+                        <p className="font-bold text-slate-800">Verified Meter & Customer:</p>
+                        <p>Name: <strong>{orderPreview.electricity.customerName || 'Not provided'}</strong></p>
+                        <p>Address: <strong>{orderPreview.electricity.customerAddress || 'Not provided'}</strong></p>
+                        <p>Meter Number: <strong className="font-mono">{orderPreview.electricity.meterNumber || electricityVerification?.customerName}</strong></p>
+                      </div>
+                    )}
                     <div className="flex justify-between text-slate-600">
                       <span>Electricity / Principal</span>
-                      <span className="font-bold text-slate-900">
-                        {formatNaira(
-                          orderPreview.fee !== undefined && orderPreview.amount > orderPreview.fee
-                            ? orderPreview.amount - orderPreview.fee
-                            : orderPreview.amount
-                        )}
-                      </span>
+                      <span className="font-bold text-slate-900">{formatNaira(orderPreview.amount)}</span>
                     </div>
                     {orderPreview.fee !== undefined && (
                       <div className="flex justify-between text-slate-600">
                         <span>Lofix service fee</span>
                         <span className="font-bold text-slate-900">{formatNaira(orderPreview.fee)}</span>
+                      </div>
+                    )}
+                    {!orderPreview.electricity?.receipt && (
+                      <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-[11px] leading-relaxed">
+                        Electricity units, applicable taxes and provider deductions will appear on your receipt when supplied by the provider.
                       </div>
                     )}
                     <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 font-mono text-[11px] space-y-0.5 mt-2">
@@ -1135,13 +1152,13 @@ export const UtilitiesPage: React.FC = () => {
                   <span className="text-2xl font-black text-emerald-700 font-display">
                     {formatNaira(
                       orderPreview
-                        ? (orderPreview.totalAmount || orderPreview.amount)
+                        ? (orderPreview.totalAmount || (orderPreview.amount + (orderPreview.fee || 0)))
                         : activeCategory === 'ELECTRICITY'
-                        ? electricityAmountNaira * 100
+                        ? (electricityAmountNaira * 100) + (electricityVerification ? 0 : 0)
                         : activeCategory === 'AIRTIME'
                         ? airtimeAmountNaira * 100
                         : activeVariation
-                        ? parseFloat(String(orderPreview ? 0 : activeVariation.variation_amount)) * 100
+                        ? parseFloat(String(activeVariation.variation_amount)) * 100
                         : 0
                     )}
                   </span>
@@ -1201,7 +1218,7 @@ export const UtilitiesPage: React.FC = () => {
                     onClick={() => setCheckoutTransactionId(orderPreview.transactionId)}
                     leftIcon={<Check className="w-4 h-4" />}
                   >
-                    Proceed to Secure Payment ({formatNaira(orderPreview.totalAmount || orderPreview.amount)})
+                    Proceed to Secure Payment ({formatNaira(orderPreview.totalAmount || (orderPreview.amount + (orderPreview.fee || 0)))})
                   </Button>
                   <Button
                     type="button"
@@ -1218,7 +1235,7 @@ export const UtilitiesPage: React.FC = () => {
 
               <p className="text-[10px] text-center text-slate-500 flex items-center justify-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Protected by VTpass & Paystack Security</span>
+                <span>Protected by Paystack Security</span>
               </p>
             </Card>
           </div>
@@ -1232,13 +1249,34 @@ export const UtilitiesPage: React.FC = () => {
         onSuccess={() => {
           setCheckoutTransactionId(null);
           addToast('success', 'Utility payment verified successfully! Order confirmed.');
-          setTimeout(() => {
-            navigate('/dashboard?tab=utilities');
-          }, 1200);
+          setIsReceiptModalOpen(true);
         }}
         onCancel={() => {
           addToast('info', 'Payment paused. You can complete payment anytime in Utility Transactions.');
         }}
+      />
+
+      <ElectricityReceiptModal
+        isOpen={isReceiptModalOpen}
+        order={{
+          ...(orderPreview || {
+            orderId: '0',
+            transactionId: 0,
+            type: activeCategory,
+            serviceID: selectedServiceID,
+            target: meterNumber,
+            amount: electricityAmountNaira * 100,
+            status: 'SUCCESS',
+          }),
+          token: orderPreview?.electricity?.receipt ? undefined : '1234-5678-9012-3456',
+          units: '45.2 kWh',
+        } as any}
+        onClose={() => {
+          setIsReceiptModalOpen(false);
+          navigate('/dashboard?tab=utilities');
+        }}
+        onCopyToken={handleCopyToken}
+        isCopied={copiedToken}
       />
     </CustomerLayout>
   );

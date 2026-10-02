@@ -12,7 +12,8 @@ import { useAuth } from '../../context/AuthContext';
 import { cleaningCustomerApi } from '../../api/cleaningCustomer';
 import { shortletCustomerApi } from '../../api/shortletCustomer';
 import { propertyListingsApi } from '../../api/propertyListings';
-import { utilitiesApi } from '../../api/utilities';
+import { utilitiesApi, VtpassOrderDetail } from '../../api/utilities';
+import { ElectricityReceiptModal } from '../../components/utilities/ElectricityReceiptModal';
 import { authApi } from '../../api/auth';
 import { CleaningBooking } from '../../api/bookings';
 import { LiveJobTrackingModal } from '../../components/cleaning/LiveJobTrackingModal';
@@ -57,6 +58,7 @@ export const UserDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'bookings' | 'enquiries' | 'utilities' | 'buy-again' | 'properties' | 'profile'>(
     activeTabFromUrl as any
   );
+  const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<VtpassOrderDetail | null>(null);
 
   useEffect(() => {
     if (activeTabFromUrl !== activeTab) {
@@ -420,9 +422,8 @@ export const UserDashboardPage: React.FC = () => {
               Buy Utilities
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               size="md"
-              className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700"
               onClick={() => navigate('/cleaning')}
               leftIcon={<Sparkles className="w-4 h-4 text-emerald-400" />}
             >
@@ -861,6 +862,18 @@ export const UserDashboardPage: React.FC = () => {
                               {copiedTokenId === order.orderId ? 'Token Copied!' : 'Copy Token'}
                             </Button>
                           </div>
+                        )}
+
+                        {isSuccess && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full font-bold text-xs mt-2"
+                            onClick={() => setSelectedReceiptOrder(order)}
+                          >
+                            View Detailed Receipt
+                          </Button>
                         )}
 
                         {order.requiresSupport && (
@@ -1427,6 +1440,13 @@ export const UserDashboardPage: React.FC = () => {
             addToast('info', `Support ticket ref: Order #${supportModalOrder.orderId}, Tx #${supportModalOrder.transactionId}. Please email support@lofix.ng`);
           }
         }}
+      />
+
+      <ElectricityReceiptModal
+        isOpen={!!selectedReceiptOrder}
+        order={selectedReceiptOrder}
+        onClose={() => setSelectedReceiptOrder(null)}
+        onCopyToken={(t) => handleCopyToken(t, selectedReceiptOrder?.orderId || '')}
       />
     </CustomerLayout>
   );
