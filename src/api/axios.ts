@@ -4,7 +4,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // Send HTTP-only refresh cookies
+  withCredentials: true, // Send HTTP-only refresh cookies (credentials: include)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -43,7 +43,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response Interceptor: Handle 401, Silent Refresh, & Log Response Details (Dev only)
+// Response Interceptor: Handle 401 (ACCESS_TOKEN_EXPIRED), Shared Refresh Promise, & Log Response Details
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
@@ -82,10 +82,16 @@ apiClient.interceptors.response.use(
     }
 
     const originalRequest = error.config;
+    const errorResponse = error.response;
+    const errorCode = errorResponse?.data?.code;
 
-    // Do not attempt refresh on login or refresh endpoints itself
+    // Handle ACCESS_TOKEN_EXPIRED or HTTP 401 Unauthorized (excluding login & refresh endpoints)
+    const isUnauthorized =
+      errorResponse?.status === 401 ||
+      errorCode === 'ACCESS_TOKEN_EXPIRED';
+
     if (
-      error.response?.status === 401 &&
+      isUnauthorized &&
       !originalRequest._retry &&
       !originalRequest.url?.includes('/accounts/authenticate') &&
       !originalRequest.url?.includes('/accounts/refresh-token')
@@ -119,10 +125,19 @@ apiClient.interceptors.response.use(
         processQueue(null, newJwtToken);
         originalRequest.headers.Authorization = `Bearer ${newJwtToken}`;
         return apiClient(originalRequest);
-      } catch (refreshErr) {
+      } catch (refreshErr: any) {
         processQueue(refreshErr, null);
-        if (logoutHandler) {
-          logoutHandler();
+        const refreshStatus = refreshErr.response?.status;
+        if (refreshStatus === 429) {
+          const retryAfter = refreshErr.response?.headers?.['retry-after'] || 30;
+          console.warn(`[AxiosAuth] Refresh rate limited (429). Retry after: ${retryAfter}s`);
+        } else if (refreshStatus === 401) {
+          // Refresh session expired/invalid - clear local authentication without calling revoke-token
+          if (logoutHandler) {
+            logoutHandler();
+          }
+        } else {
+          console.error('[AxiosAuth] Refresh token network or server error:', refreshErr.message);
         }
         return Promise.reject(refreshErr);
       } finally {
