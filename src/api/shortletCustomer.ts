@@ -13,17 +13,12 @@ export interface CreateShortletBookingPayload {
 
 export const shortletCustomerApi = {
   getApartments: async (): Promise<Apartment[]> => {
-    try {
-      const res = await apiClient.get<Apartment[]>('/apartments/search/search');
-      return res.data;
-    } catch {
-      const res = await apiClient.get<Apartment[]>('/apartments');
-      return res.data;
-    }
+    const res = await apiClient.get<Apartment[]>('/apartments/search/search');
+    return res.data;
   },
 
   getApartmentById: async (id: number): Promise<Apartment> => {
-    const res = await apiClient.get<Apartment>(`/apartments/${id}`);
+    const res = await apiClient.get<Apartment>(`/apartments/search/search/${id}`);
     return res.data;
   },
 

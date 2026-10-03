@@ -1,6 +1,9 @@
 import { apiClient } from './axios';
 
 export interface Apartment {
+  imageFileIds?: number[];
+  imageUrls?: string[];
+  images?: { id: number; url: string; thumbnailUrl?: string | null }[];
   id: number;
   title: string;
   description: string;
@@ -24,6 +27,7 @@ export interface Apartment {
   commission?: number;
   ownerId?: number;
   accountId?: number;
+  imageUrl?: string;
   account?: { id: number; firstName: string; lastName: string; email: string };
   owner?: { id: number; firstName: string; lastName: string; email: string };
   createdAt?: string;
@@ -76,6 +80,7 @@ export interface ApartmentPayload {
   isActivated?: boolean;
   commission?: number;
   ownerId?: number;
+  imageUrl?: string;
 }
 
 export interface RoomPayload {

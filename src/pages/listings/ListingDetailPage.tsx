@@ -161,13 +161,7 @@ export const ListingDetailPage: React.FC = () => {
     }
   };
 
-  const galleryImages = listing?.images?.length
-    ? listing.images
-    : [
-        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
-      ];
+  const galleryImages = listing?.images || [];
 
   const formattedPrice = formatNaira(listing?.price || 0);
   const periodText = listing?.pricePeriod ? `/ ${listing.pricePeriod}` : '';
@@ -223,14 +217,8 @@ export const ListingDetailPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 rounded-2xl overflow-hidden h-72 sm:h-96 border border-slate-200 shadow-xs">
-                <div className="col-span-2 h-full bg-slate-100">
-                  <img src={galleryImages[0]} alt={listing.title} className="w-full h-full object-cover" />
-                </div>
-                <div className="grid grid-rows-2 gap-3 h-full">
-                  <img src={galleryImages[1]} alt={listing.title} className="w-full h-full object-cover" />
-                  <img src={galleryImages[2]} alt={listing.title} className="w-full h-full object-cover" />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {galleryImages.length ? galleryImages.map((url, index) => <img key={url} src={url} alt={`${listing.title} image ${index + 1}`} className="w-full h-64 object-cover rounded-xl" />) : <div className="p-12 bg-slate-100 rounded-xl">No property images available</div>}
               </div>
 
               <Card className="space-y-4">
@@ -253,6 +241,20 @@ export const ListingDetailPage: React.FC = () => {
                     </span>
                   )}
                 </div>
+
+                {listing.amenities && listing.amenities.length > 0 && (
+                  <div className="pt-4 border-t border-slate-100 space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">Included Amenities</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {listing.amenities.map((amenity, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-800 border border-slate-200 rounded-lg text-xs font-semibold">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                          {amenity}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </Card>
             </div>
 

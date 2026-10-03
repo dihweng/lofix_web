@@ -20,6 +20,7 @@ export const ApartmentsPage: React.FC = () => {
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [purpose, setPurpose] = useState<'SHORTLET' | 'RENT' | 'SALE'>('SHORTLET');
   const [apartmentType, setApartmentType] = useState<'FLAT' | 'DUPLEX'>('FLAT');
   const [totalBedrooms, setTotalBedrooms] = useState<number>(1);
@@ -70,6 +71,7 @@ export const ApartmentsPage: React.FC = () => {
     setEditingApartment(null);
     setTitle('');
     setDescription('');
+    setImageUrl('');
     setPurpose('SHORTLET');
     setApartmentType('FLAT');
     setTotalBedrooms(1);
@@ -97,6 +99,7 @@ export const ApartmentsPage: React.FC = () => {
     setEditingApartment(apt);
     setTitle(apt.title);
     setDescription(apt.description);
+    setImageUrl(apt.imageUrl || '');
     setPurpose((apt.purpose as any) || 'SHORTLET');
     setApartmentType(apt.apartmentType);
     setTotalBedrooms(apt.totalBedrooms);
@@ -125,6 +128,7 @@ export const ApartmentsPage: React.FC = () => {
       const payload: ApartmentPayload = {
         title,
         description,
+        imageUrl: imageUrl === editingApartment?.imageUrl ? undefined : imageUrl || undefined,
         purpose,
         apartmentType,
         totalBedrooms: Number(totalBedrooms),
@@ -190,15 +194,20 @@ export const ApartmentsPage: React.FC = () => {
     {
       header: 'Apartment Title',
       cell: (apt) => (
-        <div>
-          <div className="font-semibold text-slate-900 flex items-center gap-2">
-            <span>{apt.title}</span>
-            <Badge variant="primary" size="sm">
-              {apt.purpose || 'SHORTLET'}
-            </Badge>
-          </div>
-          <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-            <MapPin className="w-3 h-3 text-slate-400" /> {apt.address}
+        <div className="flex items-center gap-3">
+          {apt.imageUrl && (
+            <img src={apt.imageUrl} alt={apt.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+          )}
+          <div>
+            <div className="font-semibold text-slate-900 flex items-center gap-2">
+              <span>{apt.title}</span>
+              <Badge variant="primary" size="sm">
+                {apt.purpose || 'SHORTLET'}
+              </Badge>
+            </div>
+            <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3 h-3 text-slate-400" /> {apt.address}
+            </div>
           </div>
         </div>
       ),
@@ -296,6 +305,14 @@ export const ApartmentsPage: React.FC = () => {
             required
           />
 
+          <Input
+            label="Image URL (Optional)"
+            type="url"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://example.com/apartment-image.jpg"
+          />
+
           <Select
             label="Listing Category / Purpose"
             value={purpose}
@@ -360,117 +377,103 @@ export const ApartmentsPage: React.FC = () => {
             required
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Latitude"
-              type="number"
-              step="any"
-              value={latitude}
-              onChange={(e) => setLatitude(Number(e.target.value))}
-            />
-            <Input
-              label="Longitude"
-              type="number"
-              step="any"
-              value={longitude}
-              onChange={(e) => setLongitude(Number(e.target.value))}
-            />
-          </div>
-
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-              Description <span className="text-red-500">*</span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Description
             </label>
             <textarea
-              className="block w-full rounded-lg border border-slate-300 text-sm p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="w-full rounded-xl border border-slate-200 p-3 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Full description of the shortlet apartment..."
+              placeholder="Detailed property description, amenities, and house rules..."
               required
             />
           </div>
 
-          {/* Amenities Grid */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Amenities & Rules
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={hasTv} onChange={(e) => setHasTv(e.target.checked)} /> TV
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            {[
+              { label: 'Party Allowed', state: isPartyAllowed, setter: setIsPartyAllowed },
+              { label: 'TV', state: hasTv, setter: setHasTv },
+              { label: 'Kitchen', state: hasKitchen, setter: setHasKitchen },
+              { label: 'Air Con', state: hasAirCon, setter: setHasAirCon },
+              { label: 'Heating', state: hasHeating, setter: setHasHeating },
+              { label: 'Internet', state: hasInternet, setter: setHasInternet },
+              { label: 'Water', state: hasWater, setter: setHasWater },
+              { label: 'Light (24/7)', state: hasLight, setter: setHasLight },
+            ].map((amenity, idx) => (
+              <label key={idx} className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={amenity.state}
+                  onChange={(e) => amenity.setter(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span>{amenity.label}</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={hasKitchen} onChange={(e) => setHasKitchen(e.target.checked)} /> Kitchen
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={hasAirCon} onChange={(e) => setHasAirCon(e.target.checked)} /> Air Con
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={hasInternet} onChange={(e) => setHasInternet(e.target.checked)} /> WiFi
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={hasLight} onChange={(e) => setHasLight(e.target.checked)} /> 24/7 Power
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={hasWater} onChange={(e) => setHasWater(e.target.checked)} /> Water
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={hasHeating} onChange={(e) => setHasHeating(e.target.checked)} /> Water Heater
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={isPartyAllowed} onChange={(e) => setIsPartyAllowed(e.target.checked)} /> Party Allowed
-              </label>
-            </div>
+            ))}
           </div>
 
-          {/* Admin Controls */}
-          <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-3 text-xs">
-            <label className="block font-bold text-emerald-900 uppercase tracking-wider">
-              Admin System Settings
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Select
-                label="Owner Account"
-                value={ownerId}
-                onChange={(e) => setOwnerId(Number(e.target.value))}
-                options={accounts.map((acc) => ({
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+            <Select
+              label="Account Owner / Host"
+              value={ownerId}
+              onChange={(e) => setOwnerId(e.target.value ? Number(e.target.value) : '')}
+              options={[
+                { value: '', label: 'Select owner account...' },
+                ...accounts.map((acc) => ({
                   value: acc.id,
-                  label: `${acc.firstName} ${acc.lastName} (${acc.role})`,
-                }))}
+                  label: `${acc.firstName} ${acc.lastName} (${acc.email})`,
+                })),
+              ]}
+            />
+
+            <Input
+              label="Platform Commission (e.g. 0.1 for 10%)"
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              value={commission}
+              onChange={(e) => setCommission(Number(e.target.value))}
+              required
+            />
+          </div>
+
+          <div className="flex items-center gap-4 pt-2">
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isListed}
+                onChange={(e) => setIsListed(e.target.checked)}
+                className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
               />
-              <Input
-                label="Commission Rate (0 - 1)"
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                value={commission}
-                onChange={(e) => setCommission(Number(e.target.value))}
+              <span>Listed Publicly</span>
+            </label>
+
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isActivated}
+                onChange={(e) => setIsActivated(e.target.checked)}
+                className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
               />
-              <div className="space-y-1.5 pt-4">
-                <label className="flex items-center gap-2 font-medium">
-                  <input type="checkbox" checked={isListed} onChange={(e) => setIsListed(e.target.checked)} /> Listed
-                </label>
-                <label className="flex items-center gap-2 font-medium">
-                  <input type="checkbox" checked={isActivated} onChange={(e) => setIsActivated(e.target.checked)} /> Activated
-                </label>
-              </div>
-            </div>
+              <span>Active</span>
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" isLoading={saveMutation.isPending} className="font-bold">
-              {editingApartment ? 'Save Changes' : 'Create Apartment'}
+            <Button variant="primary" type="submit" isLoading={saveMutation.isPending}>
+              {editingApartment ? 'Update Apartment' : 'Create Apartment'}
             </Button>
           </div>
         </form>
       </Modal>
 
-      <ToastContainer toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
+      <ToastContainer toasts={toasts} onDismiss={addToast} />
     </PageLayout>
   );
 };

@@ -117,11 +117,8 @@ export const ShortletDetailPage: React.FC = () => {
   const description = isApartment ? apartment?.description : room?.description;
   const address = isApartment ? apartment?.address : room?.apartment?.address || 'Lagos / Abuja';
 
-  const galleryImages = [
-    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
-  ];
+  const property = apartment || room?.apartment;
+  const galleryImages = property?.imageUrls?.length ? property.imageUrls : property?.images?.length ? property.images.map(image => image.url) : property?.imageUrl ? [property.imageUrl] : [];
 
   return (
     <CustomerLayout toasts={toasts} onDismissToast={removeToast}>
@@ -170,14 +167,8 @@ export const ShortletDetailPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 rounded-2xl overflow-hidden h-72 sm:h-96 border border-slate-200 shadow-xs">
-                <div className="col-span-2 h-full bg-slate-100">
-                  <img src={galleryImages[0]} alt={title} className="w-full h-full object-cover" />
-                </div>
-                <div className="grid grid-rows-2 gap-3 h-full">
-                  <img src={galleryImages[1]} alt={title} className="w-full h-full object-cover" />
-                  <img src={galleryImages[2]} alt={title} className="w-full h-full object-cover" />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {galleryImages.length ? galleryImages.map((url, index) => <img key={url} src={url} alt={`${title} image ${index + 1}`} className="w-full h-64 object-cover rounded-xl" />) : <div className="p-12 bg-slate-100 rounded-xl">No property images available</div>}
               </div>
 
               <Card className="space-y-4">

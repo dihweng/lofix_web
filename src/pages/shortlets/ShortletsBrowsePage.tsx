@@ -50,6 +50,8 @@ export const ShortletsBrowsePage: React.FC = () => {
   // Convert standalone apartments to PropertyListing shape
   const mappedStandaloneListings: PropertyListing[] = (standaloneApartments || []).map((apt: any) => ({
     id: apt.id,
+    source: "apartment",
+    apartmentId: apt.id,
     title: apt.title || `Shortlet Apartment #${apt.id}`,
     description: apt.description || 'Verified luxury shortlet apartment',
     purpose: 'SHORTLET' as ListingPurpose,
@@ -59,13 +61,13 @@ export const ShortletsBrowsePage: React.FC = () => {
     pricePeriod: 'NIGHT',
     bedrooms: apt.bedrooms || apt.numberOfRooms || 1,
     bathrooms: apt.bathrooms || apt.numberOfBathrooms || 1,
-    images: apt.images || (apt.imageUrl ? [apt.imageUrl] : []),
+    images: apt.imageUrls?.length ? apt.imageUrls : (apt.images?.map((image: any) => typeof image === 'string' ? image : image.url) || (apt.imageUrl ? [apt.imageUrl] : [])),
   }));
 
   // Combine listings for SHORTLET tab; only propertyListings for RENT and SALE
   const combinedListings: PropertyListing[] =
     purposeTab === 'SHORTLET'
-      ? [...listings, ...mappedStandaloneListings.filter((a) => !listings.some((l) => l.id === a.id))]
+      ? [...listings, ...mappedStandaloneListings.filter((a) => !listings.some((l) => l.apartmentId === a.apartmentId))]
       : listings;
 
   const filteredListings = combinedListings.filter((listing) => {
@@ -205,7 +207,7 @@ export const ShortletsBrowsePage: React.FC = () => {
 
               return (
                 <Card
-                  key={`${listing.purpose}-${listing.id}`}
+                  key={`${listing.source || "listing"}-${listing.purpose}-${listing.id}`}
                   className="group overflow-hidden border-slate-200 hover:border-emerald-500/50 hover:shadow-lg transition-all flex flex-col justify-between"
                 >
                   <div>
@@ -260,7 +262,7 @@ export const ShortletsBrowsePage: React.FC = () => {
                         variant="primary"
                         size="md"
                         className="w-full font-bold"
-                        onClick={() => navigate(`/listings/${listing.id}`)}
+                        onClick={() => navigate(listing.source === "apartment" ? `/shortlets/apartment/${listing.id}` : `/listings/${listing.id}`)}
                         rightIcon={<ArrowRight className="w-4 h-4" />}
                       >
                         Book & Pay Instantly

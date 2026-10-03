@@ -3,6 +3,10 @@ import { apiClient } from './axios';
 export type ListingPurpose = 'RENT' | 'SALE' | 'SHORTLET';
 
 export interface PropertyListing {
+  source?: "listing" | "apartment";
+  apartmentId?: number;
+  imageUrl?: string;
+  imageUrls?: string[];
   id: number;
   title: string;
   description: string;
@@ -80,6 +84,11 @@ export interface ShortletListingBookingResult {
   offerSnapshot?: PropertyListing;
 }
 
+function normalizeListingImages(data: any): PropertyListing {
+  const raw = data.imageUrls?.length ? data.imageUrls : data.images || data.property?.images || [];
+  const urls = raw.map((image: any) => typeof image === 'string' ? image : image.url).filter(Boolean);
+  return { ...data, source: "listing", purpose: String(data.purpose).toUpperCase() as ListingPurpose, images: urls.length ? urls : (data.imageUrl ? [data.imageUrl] : []) };
+}
 export const propertyListingsApi = {
   getListings: async (
     purpose?: ListingPurpose,
@@ -95,12 +104,12 @@ export const propertyListingsApi = {
         location,
       },
     });
-    return res.data;
+    return res.data.map(normalizeListingImages);
   },
 
   getListingById: async (id: number): Promise<PropertyListing> => {
     const res = await apiClient.get<PropertyListing>(`/property-listings/${id}`);
-    return res.data;
+    return normalizeListingImages(res.data);
   },
 
   submitEnquiry: async (id: number, message: string): Promise<UserEnquiry> => {
