@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { Account, LoginCredentials, CreateAccountPayload, UpdateProfilePayload, authApi } from '../api/auth';
+import {
+  Account,
+  AuthResponse,
+  LoginCredentials,
+  RegistrationPayload,
+  RegistrationResponse,
+  UpdateProfilePayload,
+  authApi,
+} from '../api/auth';
 import { configureAxiosAuth } from '../api/axios';
 import { readSession, saveSession } from './session';
 
@@ -9,7 +17,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
-  register: (payload: CreateAccountPayload) => Promise<void>;
+  register: (payload: RegistrationPayload) => Promise<RegistrationResponse>;
+  completePhoneVerification: (account: AuthResponse) => void;
   updateProfile: (payload: UpdateProfilePayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -42,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleLogout = useCallback(async () => {
     if (jwtToken) {
       try {
-        await authApi.revokeToken(jwtToken);
+        await authApi.revokeToken(undefined, jwtToken);
       } catch {
         // Ignore logout revocation errors
       }
@@ -62,12 +71,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUser = useCallback(async () => {
     try {
       const data = await authApi.refreshToken();
-      // If the active HTTP-only cookie belongs to an Admin account, clear it so Customer App starts fresh
-      if (data.role === 'Admin') {
+      if (data.role !== 'User') {
         try {
-          await authApi.revokeToken(data.jwtToken);
+          await authApi.revokeToken(undefined, data.jwtToken);
         } catch {
-          // Ignore
+          // The customer app still rejects non-customer sessions if revocation fails.
         }
         setUser(null);
         setToken(null);
@@ -94,20 +102,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: LoginCredentials) => {
     const data = await authApi.login(credentials);
+    if (data.role !== 'User') {
+      try {
+        await authApi.revokeToken(undefined, data.jwtToken);
+      } catch {
+        // The customer app still rejects non-customer sessions if revocation fails.
+      }
+      throw new Error('This account is not a customer account. Sign in through the Lofix Dashboard.');
+    }
     userRef.current = data;
     setUser(data);
     setToken(data.jwtToken);
   };
 
-  const register = async (payload: CreateAccountPayload) => {
-    try {
-      await authApi.register(payload);
-    } catch {
-      // Fallback to /accounts if /accounts/register is not present
-      await authApi.createAccount(payload);
+  const register = async (payload: RegistrationPayload) => {
+    return authApi.register(payload);
+  };
+
+  const completePhoneVerification = (data: AuthResponse) => {
+    if (data.role !== 'User') {
+      throw new Error('This account is not a customer account.');
     }
-    // Automatically log in after registration
-    await login({ email: payload.email, password: payload.password });
+    userRef.current = data;
+    setUser(data);
+    setToken(data.jwtToken);
   };
 
   const updateProfile = async (payload: UpdateProfilePayload) => {
@@ -127,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         register,
+        completePhoneVerification,
         updateProfile,
         logout: handleLogout,
         refreshUser,

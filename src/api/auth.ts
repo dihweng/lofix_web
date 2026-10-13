@@ -28,7 +28,21 @@ export interface CreateAccountPayload {
   password: string;
   confirmPassword: string;
   role?: 'Admin' | 'User' | 'Agent';
-  acceptTerms?: boolean;
+}
+
+export interface RegistrationPayload {
+  title: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: true;
+}
+
+export interface RegistrationResponse {
+  message: string;
 }
 
 export interface LoginCredentials {
@@ -60,8 +74,18 @@ export const authApi = {
     return response.data;
   },
 
-  register: async (payload: CreateAccountPayload): Promise<Account> => {
-    const response = await apiClient.post<Account>('/accounts/register', payload);
+  register: async (payload: RegistrationPayload): Promise<RegistrationResponse> => {
+    const response = await apiClient.post<RegistrationResponse>('/accounts/register', payload);
+    return response.data;
+  },
+
+  verifyEmail: async (token: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>('/accounts/verify-email', { token });
+    return response.data;
+  },
+
+  verifyPhone: async (token: string, phoneNumber: string): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>('/accounts/verify-phone', { token, phoneNumber });
     return response.data;
   },
 
@@ -69,8 +93,12 @@ export const authApi = {
     return refreshSession();
   },
 
-  revokeToken: async (token?: string): Promise<{ message: string }> => {
-    const response = await apiClient.post<{ message: string }>('/accounts/revoke-token', { token });
+  revokeToken: async (token?: string, accessToken?: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      '/accounts/revoke-token',
+      { token },
+      accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined
+    );
     return response.data;
   },
 
@@ -102,18 +130,13 @@ export const authApi = {
     return response.data;
   },
 
-  requestPhoneOtp: async (): Promise<{ message: string }> => {
-    const res = await apiClient.post<{ message: string }>('/accounts/request-phone-otp');
+  requestPhoneOtp: async (phoneNumber: string): Promise<{ message: string }> => {
+    const res = await apiClient.post<{ message: string }>('/accounts/login', { phoneNumber });
     return res.data;
   },
 
-  verifyPhoneOtp: async (otp: string): Promise<{ message: string; isPhoneVerified: boolean }> => {
-    const res = await apiClient.post<{ message: string; isPhoneVerified: boolean }>('/accounts/verify-phone', { otp });
-    return res.data;
-  },
-
-  verifyEmail: async (otp: string): Promise<{ message: string; isVerified?: boolean }> => {
-    const res = await apiClient.post<{ message: string; isVerified?: boolean }>('/accounts/verify-email', { otp });
+  verifyPhoneOtp: async (token: string, phoneNumber: string): Promise<AuthResponse> => {
+    const res = await apiClient.post<AuthResponse>('/accounts/verify-phone', { token, phoneNumber });
     return res.data;
   },
 };

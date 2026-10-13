@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { utilitiesApi } from '../../api/utilities';
 import { UtilitiesPage } from '../../pages/utilities/UtilitiesPage';
@@ -166,13 +166,13 @@ describe('UtilitiesPage Component & VTpass Bills Integration Flow', () => {
     expect(ekoBtn).toBeDisabled();
     expect(screen.getByText(/Eko Electric service undergoing maintenance/i)).toBeInTheDocument();
 
-    fireEvent.click(ikejaBtn);
+    await act(async () => { fireEvent.click(ikejaBtn); });
 
     const meterInput = screen.getByPlaceholderText(/Enter meter number.../i);
     fireEvent.change(meterInput, { target: { value: '44001234567' } });
 
     const verifyButton = screen.getByRole('button', { name: /verify customer meter/i });
-    fireEvent.click(verifyButton);
+    await act(async () => { fireEvent.click(verifyButton); });
 
     await waitFor(() => {
       expect(utilitiesApi.verifyVtpassTarget).toHaveBeenCalledWith({
@@ -184,7 +184,7 @@ describe('UtilitiesPage Component & VTpass Bills Integration Flow', () => {
     });
 
     const submitBtn = screen.getByRole('button', { name: /create order & pay/i });
-    fireEvent.click(submitBtn);
+    await act(async () => { fireEvent.click(submitBtn); });
 
     await waitFor(() => {
       expect(utilitiesApi.createVtpassOrder).toHaveBeenCalledWith(
@@ -249,13 +249,13 @@ describe('UtilitiesPage Component & VTpass Bills Integration Flow', () => {
     });
 
     const ikejaBtn = screen.getByText('Ikeja Electric (IKEDC)').closest('button')!;
-    fireEvent.click(ikejaBtn);
+    await act(async () => { fireEvent.click(ikejaBtn); });
 
     const meterInput = screen.getByPlaceholderText(/Enter meter number.../i);
     fireEvent.change(meterInput, { target: { value: '44001234567' } });
 
     const verifyButton = screen.getByRole('button', { name: /verify customer meter/i });
-    fireEvent.click(verifyButton);
+    await act(async () => { fireEvent.click(verifyButton); });
 
     await waitFor(() => {
       expect(screen.getByText(/Verified Customer Name: Verified Holder/i)).toBeInTheDocument();
@@ -278,13 +278,13 @@ describe('UtilitiesPage Component & VTpass Bills Integration Flow', () => {
     });
 
     const ikejaBtn = screen.getByText('Ikeja Electric (IKEDC)').closest('button')!;
-    fireEvent.click(ikejaBtn);
+    await act(async () => { fireEvent.click(ikejaBtn); });
 
     const meterInput = screen.getByPlaceholderText(/Enter meter number.../i);
     fireEvent.change(meterInput, { target: { value: '00000000000' } });
 
     const verifyButton = screen.getByRole('button', { name: /verify customer meter/i });
-    fireEvent.click(verifyButton);
+    await act(async () => { fireEvent.click(verifyButton); });
 
     await waitFor(() => {
       expect(utilitiesApi.verifyVtpassTarget).toHaveBeenCalled();
@@ -292,7 +292,7 @@ describe('UtilitiesPage Component & VTpass Bills Integration Flow', () => {
 
     // Attempting to submit order without successful verification blocks submission
     const verifyAgainBtn = screen.getByRole('button', { name: /verify customer meter/i });
-    fireEvent.click(verifyAgainBtn);
+    await act(async () => { fireEvent.click(verifyAgainBtn); });
 
     expect(utilitiesApi.createVtpassOrder).not.toHaveBeenCalled();
   });
@@ -311,7 +311,7 @@ describe('UtilitiesPage Component & VTpass Bills Integration Flow', () => {
 
     (utilitiesApi.getElectricityCatalogue as any).mockResolvedValueOnce(mockElectricityCatalogue);
 
-    fireEvent.click(screen.getByRole('button', { name: /retry loading catalogue/i }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /retry loading catalogue/i })); });
 
     await waitFor(() => {
       expect(screen.getByText('Ikeja Electric (IKEDC)')).toBeInTheDocument();
@@ -332,7 +332,7 @@ describe('UtilitiesPage Component & VTpass Bills Integration Flow', () => {
       expect(screen.getByRole('button', { name: /mobile data/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /mobile data/i }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /mobile data/i })); });
 
     await waitFor(() => {
       expect(screen.getByText(/Buy Mobile Data Bundles/i)).toBeInTheDocument();
@@ -343,7 +343,7 @@ describe('UtilitiesPage Component & VTpass Bills Integration Flow', () => {
     fireEvent.change(recipientInput, { target: { value: '08031234567' } });
 
     const submitBtn = screen.getByRole('button', { name: /create order & pay/i });
-    fireEvent.click(submitBtn);
+    await act(async () => { fireEvent.click(submitBtn); });
 
     await waitFor(() => {
       expect(utilitiesApi.createVtpassOrder).toHaveBeenCalledWith(

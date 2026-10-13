@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
@@ -20,6 +21,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
   onSwitchMode,
 }) => {
   const { login, register } = useAuth();
+  const navigate = useNavigate();
 
   // Login Form State
   const [loginEmail, setLoginEmail] = useState('');
@@ -33,7 +35,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -57,7 +59,12 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
       onClose();
       resetState();
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || err.message || 'Login failed. Please verify credentials.');
+      const message = err.response?.data?.message || err.message;
+      setErrorMsg(
+        message === 'Email or password is incorrect'
+          ? 'Email or password is incorrect, or your account is not verified. Complete the email and phone verification steps sent during registration.'
+          : message || 'Login failed. Please verify credentials.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -82,9 +89,14 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
       return;
     }
 
+    if (!acceptTerms) {
+      setErrorMsg('Please accept the Terms of Service to create an account.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await register({
+      const result = await register({
         title,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -92,12 +104,22 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
         phoneNumber: phoneNumber.trim(),
         password: regPassword,
         confirmPassword,
-        role: 'User',
+        acceptTerms: true,
       });
       onClose();
-      resetState();
-    } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || err.message || 'Registration failed. Please try again.');
+      navigate('/account/verify-email', {
+        state: {
+          email: regEmail.trim(),
+          phoneNumber: phoneNumber.trim(),
+          registrationMessage: result.message,
+        },
+      });
+    } catch (err: unknown) {
+      const responseMessage =
+        typeof err === 'object' && err !== null && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      setErrorMsg(responseMessage || (err instanceof Error ? err.message : 'Registration failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -239,6 +261,19 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
               leftIcon={<Lock className="w-4 h-4" />}
             />
           </div>
+
+          <label className="flex items-start gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={acceptTerms}
+              onChange={(e) => setAcceptTerms(e.target.checked)}
+              required
+              className="mt-0.5"
+            />
+            <span>
+              I accept the <a href="/terms" className="font-semibold text-emerald-700 underline">Terms of Service</a>.
+            </span>
+          </label>
 
           <Button
             type="submit"

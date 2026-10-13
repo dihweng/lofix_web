@@ -52,7 +52,7 @@ import {
 export const UserDashboardPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, updateProfile, refreshUser } = useAuth();
+  const { user, updateProfile, refreshUser, completePhoneVerification } = useAuth();
 
   const activeTabFromUrl = searchParams.get('tab') || 'buy-again';
   const [activeTab, setActiveTab] = useState<'bookings' | 'enquiries' | 'utilities' | 'buy-again' | 'properties' | 'profile'>(
@@ -136,7 +136,7 @@ export const UserDashboardPage: React.FC = () => {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(user?.isPhoneVerified || false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(user?.isPhoneVerified || user?.activated || false);
 
   // Change Password State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -181,7 +181,7 @@ export const UserDashboardPage: React.FC = () => {
   const handleRequestPhoneOtp = async () => {
     setIsRequestingOtp(true);
     try {
-      const res = await authApi.requestPhoneOtp();
+      const res = await authApi.requestPhoneOtp(user?.phoneNumber || phoneNumber);
       setPhoneOtpSent(true);
       addToast('success', res.message || 'OTP sent successfully to your phone number!');
     } catch (err: any) {
@@ -199,9 +199,12 @@ export const UserDashboardPage: React.FC = () => {
     }
     setIsVerifyingOtp(true);
     try {
-      const res = await authApi.verifyPhoneOtp(phoneOtp.trim());
+      const account = await authApi.verifyPhoneOtp(phoneOtp.trim(), user?.phoneNumber || phoneNumber);
+      completePhoneVerification(account);
       setIsPhoneVerified(true);
-      addToast('success', res.message || 'Phone number verified successfully!');
+      addToast('success', account.isVerified
+        ? 'Phone verified and signed in successfully.'
+        : 'Phone verified. Please verify your email before signing in.');
     } catch (err: any) {
       addToast('error', err.response?.data?.message || err.message || 'OTP verification failed.');
     } finally {

@@ -9,7 +9,11 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "release:prepare": "node scripts/release.mjs prepare",
+    "release:deploy": "node scripts/release.mjs deploy",
+    "release:verify": "node scripts/release.mjs verify",
+    "build:cloudflare": "node scripts/release.mjs ci"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
