@@ -1,3 +1,4 @@
+import { PropertyGuestDetails } from '../../components/listings/PropertyGuestDetails';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -29,6 +30,14 @@ import {
   AlertCircle,
   PhoneCall,
   User,
+  Zap,
+  Wind,
+  Tv,
+  Utensils,
+  Droplet,
+  Wifi,
+  Waves,
+  Dumbbell,
 } from 'lucide-react';
 
 export const ListingDetailPage: React.FC = () => {
@@ -77,6 +86,7 @@ export const ListingDetailPage: React.FC = () => {
   const [checkoutTransactionId, setCheckoutTransactionId] = useState<number | null>(null);
   const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
@@ -119,6 +129,7 @@ export const ListingDetailPage: React.FC = () => {
 
     if (!isAuthenticated) {
       addToast('info', 'Please sign in or register to book this shortlet stay.');
+      setAuthMode('login');
       setIsAuthModalOpen(true);
       return;
     }
@@ -159,6 +170,38 @@ export const ListingDetailPage: React.FC = () => {
       setCheckoutTransactionId(pendingBooking.transactionId);
       setPendingBooking(null);
     }
+  };
+
+  const getAmenityIcon = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('power') || lower.includes('light') || lower.includes('electricity')) {
+      return <Zap className="w-4 h-4 text-yellow-500" />;
+    }
+    if (lower.includes('ac') || lower.includes('air') || lower.includes('condition')) {
+      return <Wind className="w-4 h-4 text-sky-500" />;
+    }
+    if (lower.includes('tv') || lower.includes('dstv') || lower.includes('television')) {
+      return <Tv className="w-4 h-4 text-amber-500" />;
+    }
+    if (lower.includes('kitchen') || lower.includes('cooking') || lower.includes('utensils')) {
+      return <Utensils className="w-4 h-4 text-emerald-500" />;
+    }
+    if (lower.includes('water') || lower.includes('borehole')) {
+      return <Droplet className="w-4 h-4 text-blue-500" />;
+    }
+    if (lower.includes('security') || lower.includes('guard') || lower.includes('gate') || lower.includes('safe')) {
+      return <ShieldCheck className="w-4 h-4 text-emerald-600" />;
+    }
+    if (lower.includes('wifi') || lower.includes('internet') || lower.includes('net')) {
+      return <Wifi className="w-4 h-4 text-indigo-500" />;
+    }
+    if (lower.includes('pool') || lower.includes('swim')) {
+      return <Waves className="w-4 h-4 text-cyan-500" />;
+    }
+    if (lower.includes('gym') || lower.includes('fitness')) {
+      return <Dumbbell className="w-4 h-4 text-purple-500" />;
+    }
+    return <Sparkles className="w-4 h-4 text-emerald-600" />;
   };
 
   const galleryImages = listing?.images || [];
@@ -243,18 +286,26 @@ export const ListingDetailPage: React.FC = () => {
                 </div>
 
                 {listing.amenities && listing.amenities.length > 0 && (
-                  <div className="pt-4 border-t border-slate-100 space-y-2">
+                  <div className="pt-4 border-t border-slate-100 space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">Included Amenities</h4>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-slate-700">
                       {listing.amenities.map((amenity, idx) => (
-                        <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-800 border border-slate-200 rounded-lg text-xs font-semibold">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                          {amenity}
-                        </span>
+                        <div key={idx} className="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 shadow-2xs">
+                          {getAmenityIcon(amenity)}
+                          <span className="font-semibold text-slate-800">{amenity}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
                 )}
+
+                {isShortlet && config && <section className="pt-4 space-y-2">
+                  <h3 className="font-bold">Stay information</h3>
+                  <p>Check-in: {config.checkInTime || 'Not specified'} · Check-out: {config.checkOutTime || 'Not specified'} (Africa/Lagos)</p>
+                  <p>Stay: {config.minimumNights ?? config.minNights ?? '—'}–{config.maximumNights ?? config.maxNights ?? '—'} nights · Maximum guests: {config.maximumGuests ?? config.maxGuests ?? '—'}</p>
+                  {config.cleaningFee != null && <p>Cleaning fee: {formatNaira(config.cleaningFee)}</p>}
+                </section>}
+                <PropertyGuestDetails apartmentId={listing.apartmentId} property={listing.property} />
               </Card>
             </div>
 
@@ -297,8 +348,12 @@ export const ListingDetailPage: React.FC = () => {
                         size="lg"
                         className="w-full font-bold"
                         onClick={() => {
-                          if (!isAuthenticated) setIsAuthModalOpen(true);
-                          else setIsEnquiryModalOpen(true);
+                          if (!isAuthenticated) {
+                            setAuthMode('login');
+                            setIsAuthModalOpen(true);
+                          } else {
+                            setIsEnquiryModalOpen(true);
+                          }
                         }}
                         leftIcon={<Send className="w-4 h-4" />}
                       >
@@ -341,36 +396,39 @@ export const ListingDetailPage: React.FC = () => {
                       label="Number of Guests"
                       type="number"
                       min="1"
-                      max={config?.maxGuests || 10}
+                      max={config?.maximumGuests || 10}
                       value={guests}
                       onChange={(e) => setGuests(parseInt(e.target.value, 10) || 1)}
+                      required
                     />
 
                     {isCalculatingQuote ? (
-                      <div className="h-20 bg-slate-100 rounded-xl animate-pulse" />
+                      <div className="h-20 bg-slate-100 animate-pulse rounded-xl" />
                     ) : quoteError ? (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 flex items-center gap-2">
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
                         <span>{quoteError}</span>
                       </div>
                     ) : quote ? (
                       <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
                         <div className="flex justify-between text-slate-600">
-                          <span>Nightly Rate</span>
-                          <span>{formatNaira(quote.nightlyPrice)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Duration</span>
-                          <span>{quote.nights} Nights</span>
+                          <span>{quote.nights} {quote.nights === 1 ? 'Night' : 'Nights'} Stay</span>
+                          <span>{formatNaira(quote.nightlyPrice * quote.nights)}</span>
                         </div>
                         {quote.cleaningFee > 0 && (
                           <div className="flex justify-between text-slate-600">
                             <span>Cleaning Fee</span>
-                            <span>+{formatNaira(quote.cleaningFee)}</span>
+                            <span>{formatNaira(quote.cleaningFee)}</span>
+                          </div>
+                        )}
+                        {quote.cautionFee && quote.cautionFee > 0 && (
+                          <div className="flex justify-between text-slate-600">
+                            <span>Caution Fee</span>
+                            <span>{formatNaira(quote.cautionFee)}</span>
                           </div>
                         )}
                         <div className="border-t border-slate-200 pt-2 flex justify-between font-bold text-sm text-slate-900">
-                          <span>Quote Total</span>
+                          <span>Total Amount</span>
                           <span className="text-emerald-700">{formatNaira(quote.total)}</span>
                         </div>
                       </div>
@@ -382,18 +440,13 @@ export const ListingDetailPage: React.FC = () => {
                       size="lg"
                       className="w-full font-bold"
                       isLoading={isBookingLoading}
-                      disabled={isBookingLoading || isCalculatingQuote || !!quoteError}
+                      disabled={isCalculatingQuote || !!quoteError || !quote}
                       leftIcon={<Sparkles className="w-4 h-4" />}
                     >
-                      Book & Pay Instantly
+                      Book & Pay Instantly ({quote ? formatNaira(quote.total) : formattedPrice})
                     </Button>
                   </form>
                 )}
-
-                <p className="text-[10px] text-center text-slate-500 flex items-center justify-center gap-1 mt-4">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Protected by Lofix Real Estate Guarantee</span>
-                </p>
               </Card>
             </div>
           </div>
@@ -402,16 +455,16 @@ export const ListingDetailPage: React.FC = () => {
 
       <EnquiryModal
         isOpen={isEnquiryModalOpen}
-        listing={listing || null}
         onClose={() => setIsEnquiryModalOpen(false)}
+        listing={listing || null}
         onSuccess={() => {
-          addToast('success', 'Enquiry sent! View status in My Enquiries on dashboard.');
+          addToast('success', 'Enquiry submitted successfully!');
         }}
       />
 
       <PriceChangeAcceptanceModal
         isOpen={!!pendingBooking}
-        quotedTotal={quote?.total || 0}
+        quotedTotal={quote ? quote.total : 0}
         serverTotal={pendingBooking?.serverTotal || 0}
         onAccept={handleAcceptPriceChange}
         onDecline={() => setPendingBooking(null)}
@@ -423,18 +476,19 @@ export const ListingDetailPage: React.FC = () => {
         onClose={() => setCheckoutTransactionId(null)}
         onSuccess={() => {
           setCheckoutTransactionId(null);
-          addToast('success', 'Listing shortlet payment verified! Booking confirmed.');
-          setTimeout(() => {
-            navigate('/dashboard?tab=bookings');
-          }, 1200);
+          addToast('success', 'Shortlet booking payment verified successfully!');
+          navigate('/dashboard?tab=bookings');
+        }}
+        onCancel={() => {
+          addToast('info', 'Payment paused. You can complete payment anytime in My Bookings.');
         }}
       />
 
       <AuthModals
         isOpen={isAuthModalOpen}
-        mode="login"
+        mode={authMode}
         onClose={() => setIsAuthModalOpen(false)}
-        onSwitchMode={() => {}}
+        onSwitchMode={(mode) => setAuthMode(mode)}
       />
     </CustomerLayout>
   );

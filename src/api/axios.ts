@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? 'http://localhost:4000' : 'https://api.lofix.ng');
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -44,21 +46,17 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // Response Interceptor: Handle 401 (ACCESS_TOKEN_EXPIRED), Shared Refresh Promise, & Log Response Details
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}> = [];
+let refreshPromise: Promise<import('./auth').AuthResponse> | null = null;
 
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else if (token) {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
+export const refreshSession = () => {
+  if (!refreshPromise) {
+    refreshPromise = axios.post<import('./auth').AuthResponse>(
+      `${BASE_URL}/accounts/refresh-token`, {}, { withCredentials: true }
+    ).then((response) => response.data).finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
 };
 
 apiClient.interceptors.response.use(
@@ -92,41 +90,24 @@ apiClient.interceptors.response.use(
 
     if (
       isUnauthorized &&
+      originalRequest &&
       !originalRequest._retry &&
+      !originalRequest.url?.includes('/accounts/revoke-token') &&
       !originalRequest.url?.includes('/accounts/authenticate') &&
       !originalRequest.url?.includes('/accounts/refresh-token')
     ) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return apiClient(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
       try {
-        const refreshResponse = await axios.post(
-          `${BASE_URL}/accounts/refresh-token`,
-          {},
-          { withCredentials: true }
-        );
+        const refreshResponse = await refreshSession();
 
-        const newJwtToken = refreshResponse.data.jwtToken;
+        const newJwtToken = refreshResponse.jwtToken;
         if (tokenSetter && newJwtToken) {
           tokenSetter(newJwtToken);
         }
 
-        processQueue(null, newJwtToken);
         originalRequest.headers.Authorization = `Bearer ${newJwtToken}`;
         return apiClient(originalRequest);
       } catch (refreshErr: any) {
-        processQueue(refreshErr, null);
         const refreshStatus = refreshErr.response?.status;
         if (refreshStatus === 429) {
           const retryAfter = refreshErr.response?.headers?.['retry-after'] || 30;
@@ -140,8 +121,6 @@ apiClient.interceptors.response.use(
           console.error('[AxiosAuth] Refresh token network or server error:', refreshErr.message);
         }
         return Promise.reject(refreshErr);
-      } finally {
-        isRefreshing = false;
       }
     }
 

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Account, LoginCredentials, CreateAccountPayload, UpdateProfilePayload, authApi } from '../api/auth';
 import { configureAxiosAuth } from '../api/axios';
+import { readSession, saveSession } from './session';
 
 interface AuthContextType {
   user: Account | null;
@@ -19,12 +20,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TOKEN_KEY = 'lofix_customer_jwt';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<Account | null>(null);
+  const [user, setUser] = useState<Account | null>(() => readSession(TOKEN_KEY));
   const [jwtToken, setJwtToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const tokenRef = useRef(jwtToken);
+  const userRef = useRef(user);
+  userRef.current = user;
+
   const setToken = useCallback((newToken: string | null) => {
+    tokenRef.current = newToken;
     setJwtToken(newToken);
+    saveSession(TOKEN_KEY, newToken, userRef.current);
     if (newToken) {
       localStorage.setItem(TOKEN_KEY, newToken);
     } else {
@@ -46,9 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     configureAxiosAuth(
-      () => jwtToken,
+      () => tokenRef.current,
       (token) => setToken(token),
-      () => handleLogout()
+      () => { setUser(null); setToken(null); }
     );
   }, [jwtToken, setToken, handleLogout]);
 
@@ -65,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setToken(null);
       } else {
+        userRef.current = data;
         setUser(data);
         setToken(data.jwtToken);
       }
@@ -77,11 +85,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [setToken]);
 
   useEffect(() => {
-    refreshUser();
+    if (readSession(TOKEN_KEY)) {
+      setIsLoading(false);
+    } else {
+      void refreshUser();
+    }
   }, [refreshUser]);
 
   const login = async (credentials: LoginCredentials) => {
     const data = await authApi.login(credentials);
+    userRef.current = data;
     setUser(data);
     setToken(data.jwtToken);
   };
@@ -100,7 +113,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (payload: UpdateProfilePayload) => {
     if (!user) return;
     const updated = await authApi.updateProfile(user.id, payload);
+    userRef.current = updated;
     setUser(updated);
+    saveSession(TOKEN_KEY, tokenRef.current, updated);
   };
 
   return (

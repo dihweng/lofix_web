@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Account, LoginCredentials, authApi } from '../api/auth';
 import { configureAxiosAuth } from '../api/axios';
+import { readSession, saveSession } from './session';
 
 interface AgentAuthContextType {
   user: Account | null;
@@ -16,12 +17,18 @@ const AgentAuthContext = createContext<AgentAuthContextType | undefined>(undefin
 const AGENT_TOKEN_KEY = 'lofix_agent_jwt';
 
 export const AgentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<Account | null>(null);
+  const [user, setUser] = useState<Account | null>(() => readSession(AGENT_TOKEN_KEY));
   const [jwtToken, setJwtToken] = useState<string | null>(() => localStorage.getItem(AGENT_TOKEN_KEY));
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const tokenRef = useRef(jwtToken);
+  const userRef = useRef(user);
+  userRef.current = user;
+
   const setToken = useCallback((newToken: string | null) => {
+    tokenRef.current = newToken;
     setJwtToken(newToken);
+    saveSession(AGENT_TOKEN_KEY, newToken, userRef.current);
     if (newToken) {
       localStorage.setItem(AGENT_TOKEN_KEY, newToken);
     } else {
@@ -43,9 +50,9 @@ export const AgentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     configureAxiosAuth(
-      () => jwtToken,
+      () => tokenRef.current,
       (token) => setToken(token),
-      () => handleLogout()
+      () => { setUser(null); setToken(null); }
     );
   }, [jwtToken, setToken, handleLogout]);
 
@@ -58,6 +65,7 @@ export const AgentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setUser(null);
           setToken(null);
         } else {
+          userRef.current = data;
           setUser(data);
           setToken(data.jwtToken);
         }
@@ -69,7 +77,11 @@ export const AgentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     };
 
-    initAuth();
+    if (readSession(AGENT_TOKEN_KEY)?.role === 'Agent') {
+      setIsLoading(false);
+    } else {
+      void initAuth();
+    }
   }, [setToken]);
 
   const login = async (credentials: LoginCredentials) => {
@@ -78,6 +90,7 @@ export const AgentAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       await authApi.revokeToken(data.jwtToken);
       throw new Error('Access Denied: Only Agent accounts can access the Agent Portal.');
     }
+    userRef.current = data;
     setUser(data);
     setToken(data.jwtToken);
   };

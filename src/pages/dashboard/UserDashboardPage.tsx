@@ -52,7 +52,7 @@ import {
 export const UserDashboardPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshUser } = useAuth();
 
   const activeTabFromUrl = searchParams.get('tab') || 'buy-again';
   const [activeTab, setActiveTab] = useState<'bookings' | 'enquiries' | 'utilities' | 'buy-again' | 'properties' | 'profile'>(
@@ -131,8 +131,10 @@ export const UserDashboardPage: React.FC = () => {
 
   // Phone Verification OTP State
   const [phoneOtp, setPhoneOtp] = useState('');
+  const [emailOtp, setEmailOtp] = useState('');
   const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(user?.isPhoneVerified || false);
 
@@ -204,6 +206,26 @@ export const UserDashboardPage: React.FC = () => {
       addToast('error', err.response?.data?.message || err.message || 'OTP verification failed.');
     } finally {
       setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailOtp.trim()) {
+      addToast('error', 'Please enter the verification code.');
+      return;
+    }
+
+    setIsVerifyingEmail(true);
+    try {
+      const res = await authApi.verifyEmail(emailOtp.trim());
+      await refreshUser();
+      setEmailOtp('');
+      addToast('success', res.message || 'Email address verified successfully!');
+    } catch (err: any) {
+      addToast('error', err.response?.data?.message || err.message || 'Email verification failed.');
+    } finally {
+      setIsVerifyingEmail(false);
     }
   };
 
@@ -1258,13 +1280,36 @@ export const UserDashboardPage: React.FC = () => {
                     </div>
                     <div>
                       <span className="text-slate-500 block font-semibold">Email Status</span>
-                      <span className="font-bold text-emerald-700">Active & Connected</span>
+                      <span className={`font-bold ${user?.isVerified === false ? 'text-amber-700' : 'text-emerald-700'}`}>
+                        {user?.isVerified === false ? 'Verification required' : 'Verified'}
+                      </span>
                     </div>
                     <div>
                       <span className="text-slate-500 block font-semibold">Security State</span>
                       <span className="font-bold text-emerald-700">Session Secure</span>
                     </div>
                   </div>
+
+                  {user?.isVerified === false && (
+                    <form onSubmit={handleVerifyEmail} className="space-y-3 rounded-xl border border-slate-200 p-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">Verify your email address</h4>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Enter the verification code sent to {user.email}.
+                        </p>
+                      </div>
+                      <Input
+                        label="Email verification code"
+                        value={emailOtp}
+                        onChange={(e) => setEmailOtp(e.target.value)}
+                        placeholder="Enter your code"
+                        required
+                      />
+                      <Button type="submit" variant="primary" size="md" isLoading={isVerifyingEmail}>
+                        Verify email
+                      </Button>
+                    </form>
+                  )}
                 </Card>
               )}
 

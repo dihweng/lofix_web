@@ -1,3 +1,4 @@
+import { PropertyGuestDetails } from '../../components/listings/PropertyGuestDetails';
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,11 +15,6 @@ import { PaymentModal } from '../../components/payment/PaymentModal';
 import { formatNaira } from '../../utils/money';
 import {
   MapPin,
-  Tv,
-  Wind,
-  Utensils,
-  Zap,
-  Droplet,
   ShieldCheck,
   Sparkles,
   ArrowLeft,
@@ -174,38 +170,10 @@ export const ShortletDetailPage: React.FC = () => {
               <Card className="space-y-4">
                 <h3 className="text-base font-bold text-slate-900">Property Overview</h3>
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-                  {description || 'Enjoy a comfortable, fully serviced shortlet stay featuring modern furnishings, high-speed WiFi, uninterrupted electricity, and top-tier security.'}
+                  {description || 'No description provided.'}
                 </p>
 
-                <div className="pt-4 border-t border-slate-100 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Included Amenities</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-slate-700">
-                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-                      <Zap className="w-4 h-4 text-yellow-500" />
-                      <span>24/7 Uninterrupted Power</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-                      <Wind className="w-4 h-4 text-sky-500" />
-                      <span>Air Conditioning</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-                      <Tv className="w-4 h-4 text-amber-500" />
-                      <span>Smart TV & DSTV</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-                      <Utensils className="w-4 h-4 text-emerald-500" />
-                      <span>Equipped Kitchen</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-                      <Droplet className="w-4 h-4 text-blue-500" />
-                      <span>Running Water</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>Gated Estate Security</span>
-                    </div>
-                  </div>
-                </div>
+                <PropertyGuestDetails apartmentId={property?.id} property={isApartment ? apartment : room} />
               </Card>
             </div>
 

@@ -3,6 +3,7 @@ import { apiClient } from './axios';
 export type ListingPurpose = 'RENT' | 'SALE' | 'SHORTLET';
 
 export interface PropertyListing {
+  property?: object;
   source?: "listing" | "apartment";
   apartmentId?: number;
   imageUrl?: string;
@@ -42,6 +43,11 @@ export interface UserEnquiry {
 
 export interface ShortletListingConfig {
   listingId: number;
+  checkInTime?: string;
+  checkOutTime?: string;
+  minimumNights?: number;
+  maximumNights?: number;
+  maximumGuests?: number;
   minNights?: number;
   maxNights?: number;
   maxGuests?: number;

@@ -1,4 +1,4 @@
-import { apiClient } from './axios';
+import { apiClient, refreshSession } from './axios';
 
 export interface Account {
   id: number;
@@ -66,8 +66,7 @@ export const authApi = {
   },
 
   refreshToken: async (): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/accounts/refresh-token');
-    return response.data;
+    return refreshSession();
   },
 
   revokeToken: async (token?: string): Promise<{ message: string }> => {
@@ -109,7 +108,12 @@ export const authApi = {
   },
 
   verifyPhoneOtp: async (otp: string): Promise<{ message: string; isPhoneVerified: boolean }> => {
-    const res = await apiClient.post<{ message: string; isPhoneVerified: boolean }>('/accounts/verify-phone-otp', { otp });
+    const res = await apiClient.post<{ message: string; isPhoneVerified: boolean }>('/accounts/verify-phone', { otp });
+    return res.data;
+  },
+
+  verifyEmail: async (otp: string): Promise<{ message: string; isVerified?: boolean }> => {
+    const res = await apiClient.post<{ message: string; isVerified?: boolean }>('/accounts/verify-email', { otp });
     return res.data;
   },
 };
