@@ -171,6 +171,10 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
             Sign In
           </Button>
 
+          <p className="text-center text-xs text-slate-600">
+            Read our <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 underline">Terms and Conditions</a> and{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 underline">Privacy Policy</a> (opens in a new tab).
+          </p>
           <div className="pt-3 border-t border-slate-100 text-center text-xs text-slate-500">
             <span>New to Lofix? </span>
             <button
@@ -271,7 +275,8 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
               className="mt-0.5"
             />
             <span>
-              I accept the <a href="/terms" className="font-semibold text-emerald-700 underline">Terms of Service</a>.
+              I accept the <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 underline">Terms and Conditions</a>.{' '}
+              Read our <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 underline">Privacy Policy</a> (opens in a new tab).
             </span>
           </label>
 

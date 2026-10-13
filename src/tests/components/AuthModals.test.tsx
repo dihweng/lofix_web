@@ -152,3 +152,18 @@ describe('AuthModals component', () => {
   });
 
 });
+
+
+it.each(['login', 'register'] as const)('shows readable policy links in %s without losing form state', mode => {
+  render(<BrowserRouter><AuthModals isOpen mode={mode} onClose={() => {}} onSwitchMode={() => {}} /></BrowserRouter>);
+  for (const [name, href] of [['Terms and Conditions', '/terms'], ['Privacy Policy', '/privacy']]) {
+    const link = screen.getByRole('link', { name });
+    expect(link).toHaveAttribute('href', href);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  }
+  if (mode === 'register') {
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+    expect(screen.getByRole('checkbox')).toBeRequired();
+  } else expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+});
