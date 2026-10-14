@@ -29,7 +29,7 @@ export function PasswordRecoveryPage() {
       } else if (step === 'token') {
         await authApi.validateResetToken(token.trim());
         setParams({}, { replace: true });
-        setMessage('Reset token verified. Choose a new password.'); setStep('password');
+        setMessage('Email reset token verified. Choose a new password.'); setStep('password');
       } else if (step === 'password') {
         const result = await authApi.resetPassword({ token: token.trim(), password, confirmPassword });
         setToken(''); setPassword(''); setConfirmPassword('');
@@ -45,14 +45,14 @@ export function PasswordRecoveryPage() {
     <section className="mx-auto max-w-md rounded-xl bg-white p-6 shadow">
       <Link to="/" className="text-emerald-700 underline">Back to Lofix</Link>
       <h1 className="my-4 text-2xl font-bold">Reset your password</h1>
-      <p className="mb-4 text-sm text-slate-600">Use the password-reset link or token from your email. Phone verification codes are not password-reset tokens.</p>
+      <p className="mb-4 text-sm text-slate-600">Enter your registered email address to receive a password-reset link. Open the link in your email, or paste the reset token from that email below.</p>
       {message && <p role="status" className="mb-4 text-emerald-800">{message}</p>}
       {error && <p role="alert" className="mb-4 text-red-700">{error}</p>}
       {step !== 'done' && <form onSubmit={submit}>
         {step === 'email' && <label>Email address<input className={inputClass} type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} /></label>}
-        {step === 'token' && <label>Reset token<input className={inputClass} autoComplete="off" required value={token} onChange={e => setToken(e.target.value)} /></label>}
+        {step === 'token' && <label>Email reset token<input className={inputClass} autoComplete="off" required value={token} onChange={e => setToken(e.target.value)} /></label>}
         {step === 'password' && <><label>New password<input className={inputClass} type="password" autoComplete="new-password" minLength={6} required value={password} onChange={e => setPassword(e.target.value)} /></label><label>Confirm password<input className={inputClass} type="password" autoComplete="new-password" minLength={6} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} /></label></>}
-        <button disabled={busy} className="w-full rounded-lg bg-emerald-700 p-3 text-white disabled:opacity-50">{busy ? 'Please wait…' : step === 'email' ? 'Send reset email' : step === 'token' ? 'Verify reset token' : 'Save new password'}</button>
+        <button disabled={busy} className="w-full rounded-lg bg-emerald-700 p-3 text-white disabled:opacity-50">{busy ? 'Please wait…' : step === 'email' ? 'Send reset email' : step === 'token' ? 'Verify email reset token' : 'Save new password'}</button>
       </form>}
       {step !== 'email' && step !== 'done' && <button disabled={busy} className="mt-4 text-emerald-700 underline" onClick={() => { setStep('email'); setMessage(''); setError(''); setPassword(''); setConfirmPassword(''); }}>Request another reset email</button>}
       {step === 'done' && <button className="rounded-lg bg-emerald-700 p-3 text-white" onClick={() => setLogin(true)}>Sign in</button>}
