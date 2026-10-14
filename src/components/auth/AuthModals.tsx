@@ -171,6 +171,7 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
             Sign In
           </Button>
 
+          <button type="button" className="w-full text-sm text-emerald-700 underline" onClick={() => { onClose(); navigate('/account/forgot-password'); }}>Forgot password?</button>
           <p className="text-center text-xs text-slate-600">
             Read our <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 underline">Terms and Conditions</a> and{' '}
             <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 underline">Privacy Policy</a> (opens in a new tab).

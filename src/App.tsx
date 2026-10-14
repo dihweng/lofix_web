@@ -1,4 +1,5 @@
 import React from 'react';
+import { PasswordRecoveryPage } from './pages/PasswordRecoveryPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
@@ -39,6 +40,8 @@ export const App: React.FC = () => {
               <Route path="/cleaning" element={<CleaningCalculatorPage />} />
               <Route path="/utilities" element={<UtilitiesPage />} />
               <Route path="/dashboard" element={<UserDashboardPage />} />
+              <Route path="/account/forgot-password" element={<PasswordRecoveryPage />} />
+              <Route path="/account/reset-password" element={<PasswordRecoveryPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/account/verify-email" element={<EmailVerificationPage />} />

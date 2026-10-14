@@ -69,6 +69,13 @@ export interface ChangePasswordResponse {
 }
 
 export const authApi = {
+  forgotPassword: async (email: string): Promise<{ message: string }> =>
+    (await apiClient.post('/accounts/forgot-password', { email })).data,
+  validateResetToken: async (token: string): Promise<{ message: string }> =>
+    (await apiClient.post('/accounts/validate-reset-token', { token })).data,
+  resetPassword: async (payload: { token: string; password: string; confirmPassword: string }): Promise<{ message: string }> =>
+    (await apiClient.post('/accounts/reset-password', payload)).data,
+
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>('/accounts/authenticate', credentials);
     return response.data;

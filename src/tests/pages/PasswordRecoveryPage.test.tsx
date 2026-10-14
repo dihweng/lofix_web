@@ -1,0 +1,32 @@
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, expect, it, vi } from 'vitest';
+import { PasswordRecoveryPage } from '../../pages/PasswordRecoveryPage';
+import { authApi } from '../../api/auth';
+vi.mock('../../components/auth/AuthModals', () => ({ AuthModals: () => null }));
+afterEach(() => vi.restoreAllMocks());
+it('requests recovery, verifies token and only then submits the new password', async () => {
+  const request = vi.spyOn(authApi, 'forgotPassword').mockResolvedValue({ message: 'Check your email' });
+  const verify = vi.spyOn(authApi, 'validateResetToken').mockResolvedValue({ message: 'Valid' });
+  const reset = vi.spyOn(authApi, 'resetPassword').mockResolvedValue({ message: 'Password reset successful' });
+  render(<MemoryRouter><PasswordRecoveryPage /></MemoryRouter>);
+  fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'test@example.com' } });
+  fireEvent.click(screen.getByText('Send reset email'));
+  fireEvent.change(await screen.findByLabelText('Reset token'), { target: { value: 'mail-token' } });
+  expect(request).toHaveBeenCalledWith('test@example.com'); expect(reset).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByText('Verify reset token'));
+  fireEvent.change(await screen.findByLabelText('New password'), { target: { value: 'new-password' } });
+  fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'new-password' } });
+  expect(verify).toHaveBeenCalledWith('mail-token');
+  fireEvent.click(screen.getByText('Save new password'));
+  expect(await screen.findByText('Password reset successful')).toBeInTheDocument();
+  expect(reset).toHaveBeenCalledWith({ token: 'mail-token', password: 'new-password', confirmPassword: 'new-password' });
+});
+it('invalid emailed token stays at verification and displays original error', async () => {
+  vi.spyOn(authApi, 'validateResetToken').mockRejectedValue({ response: { data: { message: 'Invalid token' } } });
+  const reset = vi.spyOn(authApi, 'resetPassword');
+  render(<MemoryRouter initialEntries={['/account/reset-password?token=expired']}><PasswordRecoveryPage /></MemoryRouter>);
+  fireEvent.click(screen.getByText('Verify reset token'));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Invalid token');
+  expect(screen.queryByLabelText('New password')).not.toBeInTheDocument(); expect(reset).not.toHaveBeenCalled();
+});
