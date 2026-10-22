@@ -34,7 +34,7 @@ export interface UserEnquiry {
   id: number;
   listingId: number;
   message: string;
-  status: 'NEW' | 'CONTACTED' | 'CLOSED' | string;
+  status: 'new' | 'contacted' | 'closed' | string;
   listing?: PropertyListing;
   offerSnapshot?: PropertyListing;
   createdAt: string;
@@ -64,9 +64,14 @@ export interface ShortletQuotePayload {
 }
 
 export interface ShortletQuoteResponse {
-  nightlyPrice: number; // kobo
+  breakdown?: {
+    accommodationTotal: number; // kobo
+    cleaningFee: number; // kobo
+    cautionFee: number; // kobo
+  };
+  nightlyPrice?: number; // kobo
   nights: number;
-  cleaningFee: number; // kobo
+  cleaningFee?: number; // kobo
   cautionFee?: number; // kobo
   serviceFee?: number; // kobo
   total: number; // kobo

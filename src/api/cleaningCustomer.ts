@@ -161,13 +161,8 @@ export const cleaningCustomerApi = {
   },
 
   getCustomerBookings: async (): Promise<CleaningBooking[]> => {
-    try {
-      const res = await apiClient.get<CleaningBooking[]>('/cleaning/bookings');
-      return res.data;
-    } catch {
-      const res = await apiClient.get<CleaningBooking[]>('/cleaning/admin/bookings');
-      return res.data;
-    }
+    const res = await apiClient.get<CleaningBooking[]>('/cleaning/bookings');
+    return res.data;
   },
 
   getBookingDetail: async (bookingId: number): Promise<CleaningBooking> => {

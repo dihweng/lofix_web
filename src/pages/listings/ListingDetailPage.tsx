@@ -1,7 +1,8 @@
+import { ShortletQuoteSummary } from '../../components/listings/ShortletQuoteSummary';
 import { PropertyGuestDetails } from '../../components/listings/PropertyGuestDetails';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   propertyListingsApi,
   ShortletQuoteResponse,
@@ -43,6 +44,7 @@ import {
 export const ListingDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
 
   const listingId = parseInt(id || '0', 10);
@@ -302,7 +304,7 @@ export const ListingDetailPage: React.FC = () => {
                 {isShortlet && config && <section className="pt-4 space-y-2">
                   <h3 className="font-bold">Stay information</h3>
                   <p>Check-in: {config.checkInTime || 'Not specified'} · Check-out: {config.checkOutTime || 'Not specified'} (Africa/Lagos)</p>
-                  <p>Stay: {config.minimumNights ?? config.minNights ?? '—'}–{config.maximumNights ?? config.maxNights ?? '—'} nights · Maximum guests: {config.maximumGuests ?? config.maxGuests ?? '—'}</p>
+                  <p>Stay: {config.minimumNights ?? config.minNights ?? 1}–{config.maximumNights ?? config.maxNights ?? '—'} nights · Maximum guests: {config.maximumGuests ?? config.maxGuests ?? '—'}</p>
                   {config.cleaningFee != null && <p>Cleaning fee: {formatNaira(config.cleaningFee)}</p>}
                 </section>}
                 <PropertyGuestDetails apartmentId={listing.apartmentId} property={listing.property} />
@@ -410,28 +412,7 @@ export const ListingDetailPage: React.FC = () => {
                         <span>{quoteError}</span>
                       </div>
                     ) : quote ? (
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
-                        <div className="flex justify-between text-slate-600">
-                          <span>{quote.nights} {quote.nights === 1 ? 'Night' : 'Nights'} Stay</span>
-                          <span>{formatNaira(quote.nightlyPrice * quote.nights)}</span>
-                        </div>
-                        {quote.cleaningFee > 0 && (
-                          <div className="flex justify-between text-slate-600">
-                            <span>Cleaning Fee</span>
-                            <span>{formatNaira(quote.cleaningFee)}</span>
-                          </div>
-                        )}
-                        {quote.cautionFee && quote.cautionFee > 0 && (
-                          <div className="flex justify-between text-slate-600">
-                            <span>Caution Fee</span>
-                            <span>{formatNaira(quote.cautionFee)}</span>
-                          </div>
-                        )}
-                        <div className="border-t border-slate-200 pt-2 flex justify-between font-bold text-sm text-slate-900">
-                          <span>Total Amount</span>
-                          <span className="text-emerald-700">{formatNaira(quote.total)}</span>
-                        </div>
-                      </div>
+                      <ShortletQuoteSummary quote={quote} />
                     ) : null}
 
                     <Button
@@ -458,6 +439,7 @@ export const ListingDetailPage: React.FC = () => {
         onClose={() => setIsEnquiryModalOpen(false)}
         listing={listing || null}
         onSuccess={() => {
+          void queryClient.invalidateQueries({ queryKey: ['myUserEnquiries'] });
           addToast('success', 'Enquiry submitted successfully!');
         }}
       />

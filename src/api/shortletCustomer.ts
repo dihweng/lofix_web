@@ -43,18 +43,8 @@ export const shortletCustomerApi = {
   },
 
   getCustomerBookings: async (): Promise<ShortletBooking[]> => {
-    try {
-      const res = await apiClient.get<ShortletBooking[]>('/bookings/customer/bookings');
-      return res.data;
-    } catch {
-      try {
-        const res = await apiClient.get<ShortletBooking[]>('/bookings');
-        return res.data;
-      } catch {
-        const res = await apiClient.get<ShortletBooking[]>('/bookings/agent/bookings');
-        return res.data;
-      }
-    }
+    const res = await apiClient.get<ShortletBooking[]>('/bookings');
+    return res.data;
   },
 
   getBookingById: async (id: number): Promise<ShortletBooking> => {

@@ -52,7 +52,7 @@ import {
 export const UserDashboardPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, updateProfile, refreshUser, completePhoneVerification } = useAuth();
+  const { user, isAuthenticated, updateProfile, refreshUser, completePhoneVerification } = useAuth();
 
   const activeTabFromUrl = searchParams.get('tab') || 'buy-again';
   const [activeTab, setActiveTab] = useState<'bookings' | 'enquiries' | 'utilities' | 'buy-again' | 'properties' | 'profile'>(
@@ -73,26 +73,35 @@ export const UserDashboardPage: React.FC = () => {
 
   const {
     data: cleaningBookings = [],
+    isLoading: isCleaningLoading,
+    isError: isCleaningError,
     refetch: refetchCleaning,
   } = useQuery({
-    queryKey: ['myCleaningBookings'],
+    queryKey: ['myCleaningBookings', user?.id],
+    enabled: isAuthenticated,
     queryFn: cleaningCustomerApi.getCustomerBookings,
     retry: false,
   });
 
   const {
     data: shortletBookings = [],
+    isLoading: isShortletLoading,
+    isError: isShortletError,
     refetch: refetchShortlets,
   } = useQuery({
-    queryKey: ['myShortletBookings'],
+    queryKey: ['myShortletBookings', user?.id],
+    enabled: isAuthenticated,
     queryFn: shortletCustomerApi.getCustomerBookings,
     retry: false,
   });
 
   const {
     data: userEnquiries = [],
+    isLoading: isEnquiriesLoading,
+    isError: isEnquiriesError,
   } = useQuery({
-    queryKey: ['myUserEnquiries'],
+    queryKey: ['myUserEnquiries', user?.id],
+    enabled: isAuthenticated,
     queryFn: propertyListingsApi.getUserEnquiries,
     retry: false,
   });
@@ -665,10 +674,14 @@ export const UserDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {filteredCleaningBookings.length === 0 && filteredShortletBookings.length === 0 ? (
+            {isCleaningLoading || isShortletLoading ? (
+              <Card>Loading bookings…</Card>
+            ) : isCleaningError || isShortletError ? (
+              <Card><p role="alert">Unable to load bookings. Please try again.</p></Card>
+            ) : (bookingTypeFilter === 'shortlet' || filteredCleaningBookings.length === 0) && (bookingTypeFilter === 'cleaning' || filteredShortletBookings.length === 0) ? (
               <Card className="p-8 text-center space-y-3">
                 <CalendarCheck className="w-10 h-10 text-slate-300 mx-auto" />
-                <h4 className="text-sm font-bold text-slate-800">No bookings found</h4>
+                <h4 className="text-sm font-bold text-slate-800">{cleaningBookings.length === 0 && shortletBookings.length === 0 ? 'You have no active bookings' : 'No bookings found'}</h4>
                 <p className="text-xs text-slate-500">You do not have any bookings matching the selected filter.</p>
               </Card>
             ) : (
@@ -990,7 +1003,11 @@ export const UserDashboardPage: React.FC = () => {
               </h3>
             </div>
 
-            {userEnquiries.length === 0 ? (
+            {isEnquiriesLoading ? (
+              <Card>Loading enquiries…</Card>
+            ) : isEnquiriesError ? (
+              <Card><p role="alert">Unable to load enquiries. Please try again.</p></Card>
+            ) : userEnquiries.length === 0 ? (
               <Card className="p-8 text-center space-y-3">
                 <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
                 <h4 className="text-sm font-bold text-slate-800">No enquiries submitted</h4>
@@ -1003,19 +1020,19 @@ export const UserDashboardPage: React.FC = () => {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {userEnquiries.map((enquiry: any) => (
+                {userEnquiries.map((enquiry) => (
                   <Card key={enquiry.id || enquiry.createdAt} className="space-y-3 border-slate-200">
                     <div className="flex items-start justify-between border-b border-slate-100 pb-2">
                       <span className="text-xs font-mono font-bold text-slate-500">
-                        Listing #{enquiry.listingId}
+                        {enquiry.listing?.title || enquiry.offerSnapshot?.title || `Listing #${enquiry.listingId}`}
                       </span>
-                      <Badge variant="success" size="sm">Submitted</Badge>
+                      <Badge variant="primary" size="sm">{formatStatus(enquiry.status)}</Badge>
                     </div>
                     <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
                       "{enquiry.message}"
                     </p>
                     <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
-                      <span>{enquiry.phone || 'No phone'}</span>
+                      <span>{enquiry.listing?.address || enquiry.offerSnapshot?.address || ''}</span>
                       <span>{enquiry.createdAt ? formatDate(enquiry.createdAt) : ''}</span>
                     </div>
                   </Card>
