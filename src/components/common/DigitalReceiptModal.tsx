@@ -47,9 +47,23 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
     ? `${cleaningBooking?.propertySnapshot?.addressLine1}, ${cleaningBooking?.propertySnapshot?.city}`
     : shortletBooking?.apartment?.address || 'Lofix Property';
 
-  const furnishing = cleaningBooking?.furnishingState || 'OCCUPIED';
-  const supplies = cleaningBooking?.suppliesPreference || 'SUPPLIES_INCLUDED';
-  const frequency = cleaningBooking?.frequency || 'ONE_TIME';
+  const furnishing = cleaningBooking?.furnishingState;
+  const frequency = cleaningBooking?.frequency;
+  const cleaningPreferenceSummary = [
+    furnishing === 'MOVE_IN_OUT'
+      ? 'Move-in / Move-out'
+      : furnishing === 'POST_CONSTRUCTION'
+        ? 'Post-construction'
+        : null,
+    cleaningBooking?.suppliesPreference === 'CUSTOMER_PROVIDED'
+      ? 'Customer provides supplies'
+      : 'Cleaning team brings supplies',
+    frequency && frequency !== 'ONE_TIME'
+      ? `Historical frequency: ${frequency === 'BI_WEEKLY' ? 'Every 2 weeks' : frequency.toLowerCase()}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' • ');
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Digital Payment Receipt" maxWidth="md">
@@ -97,9 +111,9 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
 
           {isCleaning && (
             <div className="flex justify-between border-b border-slate-200 pb-2">
-              <span className="text-slate-500 font-semibold">Preferences</span>
+              <span className="text-slate-500 font-semibold">Job preparation</span>
               <span className="font-bold text-slate-900 text-right">
-                {furnishing} • {supplies === 'CUSTOMER_PROVIDED' ? 'Customer Supplies' : 'Supplies Included'} • {frequency}
+                {cleaningPreferenceSummary}
               </span>
             </div>
           )}

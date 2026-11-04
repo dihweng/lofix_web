@@ -30,6 +30,7 @@ export interface CleaningService {
   description?: string;
   imageUrl?: string;
   estimatedDurationMinutes: number;
+  requiresAssessment?: boolean;
   active: boolean;
   category?: Category;
   createdAt?: string;

@@ -106,6 +106,9 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
         })
       );
     });
+    const quotePayload = (cleaningCustomerApi.calculateQuote as any).mock.calls[0][0];
+    expect(quotePayload).not.toHaveProperty('furnishingState');
+    expect(quotePayload).not.toHaveProperty('frequency');
 
     await waitFor(() => {
       expect(
@@ -174,6 +177,9 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
         })
       );
     });
+    const bookingPayload = (cleaningCustomerApi.createBooking as any).mock.calls[0][0];
+    expect(bookingPayload).not.toHaveProperty('furnishingState');
+    expect(bookingPayload).not.toHaveProperty('frequency');
   });
 
   it('handles legacy total-only properties by prompting for breakdown', async () => {
@@ -210,5 +216,67 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     await waitFor(() => {
       expect(screen.getByText(/Selected property has a legacy room total \(4 rooms\)/i)).toBeInTheDocument();
     });
+  });
+
+  it('shows only job-preparation supplies options without unsupported discounts or condition surcharges', async () => {
+    (cleaningCustomerApi.calculateQuote as any).mockResolvedValue({
+      basePrice: 500000,
+      roomCharges: 0,
+      bathroomCharges: 0,
+      floorCharges: 0,
+      sqMeterCharges: 0,
+      addonsTotal: 0,
+      serviceFee: 0,
+      total: 500000,
+      serviceName: 'Standard Cleaning',
+    });
+
+    renderComponent();
+
+    expect(await screen.findByText(/This preference is shared for job preparation and does not change the price/i))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /I will provide supplies/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Save 10%|Service Frequency Discount|Post-Construction|\+20%|\+50%/i))
+      .not.toBeInTheDocument();
+  });
+
+  it('does not request an instant quote or allow booking for services requiring assessment', async () => {
+    (cleaningCustomerApi.getServices as any).mockResolvedValue([
+      {
+        id: 2,
+        name: 'Post-Construction Cleaning',
+        slug: 'post-construction-cleaning',
+        categoryId: 1,
+        estimatedDurationMinutes: 180,
+        requiresAssessment: true,
+        active: true,
+      },
+    ]);
+
+    renderComponent();
+
+    expect(await screen.findByText('Assessment required')).toBeInTheDocument();
+    expect(cleaningCustomerApi.calculateQuote).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /book & proceed to checkout/i })).toBeDisabled();
+    expect(screen.getByRole('link', { name: /contact lofix support/i }))
+      .toHaveAttribute('href', expect.stringContaining('mailto:support@lofix.ng'));
+  });
+
+  it('explains assessment-required quote responses from the backend', async () => {
+    (cleaningCustomerApi.calculateQuote as any).mockRejectedValue({
+      response: {
+        status: 409,
+        data: {
+          code: 'ASSESSMENT_REQUIRED',
+          message: 'This cleaning request requires an assessment before a price can be confirmed',
+        },
+      },
+    });
+
+    renderComponent();
+
+    expect(await screen.findByText('Assessment required')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /book & proceed to checkout/i })).toBeDisabled();
+    expect(screen.getByRole('link', { name: /contact lofix support/i })).toBeInTheDocument();
   });
 });
