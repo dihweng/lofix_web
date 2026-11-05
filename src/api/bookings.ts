@@ -61,6 +61,7 @@ export interface PriceSnapshot {
   furnishingSurcharge?: number;
   suppliesDiscount?: number; // negative integer kobo
   frequencyDiscount?: number; // negative integer kobo
+  frequencyDiscountPercent?: number;
   serviceFee: number;
   addonsTotal: number;
   dishwashingTotal?: number;

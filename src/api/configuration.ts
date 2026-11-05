@@ -31,6 +31,10 @@ export interface CleaningService {
   imageUrl?: string;
   estimatedDurationMinutes: number;
   requiresAssessment?: boolean;
+  frequencyPromotionsEnabled?: boolean;
+  weeklyDiscountPercent?: number;
+  biWeeklyDiscountPercent?: number;
+  monthlyDiscountPercent?: number;
   active: boolean;
   category?: Category;
   createdAt?: string;

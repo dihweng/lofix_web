@@ -240,6 +240,61 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       .not.toBeInTheDocument();
   });
 
+  it('shows configured frequency discounts and sends the selected frequency for quotes and booking', async () => {
+    (cleaningCustomerApi.getServices as any).mockResolvedValue([
+      {
+        id: 1,
+        name: 'Standard Cleaning',
+        description: 'Basic clean',
+        estimatedDurationMinutes: 120,
+        frequencyPromotionsEnabled: true,
+        weeklyDiscountPercent: 15,
+        biWeeklyDiscountPercent: 10,
+        monthlyDiscountPercent: 5,
+      },
+    ]);
+    (cleaningCustomerApi.calculateQuote as any).mockResolvedValue({
+      basePrice: 500000,
+      roomCharges: 0,
+      bathroomCharges: 0,
+      floorCharges: 0,
+      sqMeterCharges: 0,
+      addonsTotal: 0,
+      frequencyDiscount: -75000,
+      frequencyDiscountPercent: 15,
+      serviceFee: 0,
+      total: 425000,
+      serviceName: 'Standard Cleaning',
+    });
+    (cleaningCustomerApi.createBooking as any).mockResolvedValue({
+      id: 99,
+      transactionId: 202,
+      total: 425000,
+      status: 'PAYMENT_PENDING',
+    });
+
+    renderComponent();
+
+    const weeklyOption = await screen.findByRole('button', { name: /Weekly Save 15% on cleaning/i });
+    expect(screen.getByRole('button', { name: /Every 2 weeks Save 10% on cleaning/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Monthly Save 5% on cleaning/i })).toBeInTheDocument();
+    fireEvent.click(weeklyOption);
+
+    await waitFor(() => {
+      expect(cleaningCustomerApi.calculateQuote).toHaveBeenCalledWith(
+        expect.objectContaining({ frequency: 'WEEKLY' })
+      );
+    });
+    expect(await screen.findByText(/Frequency discount \(15%\)/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Book & Proceed to Checkout/i }));
+    await waitFor(() => {
+      expect(cleaningCustomerApi.createBooking).toHaveBeenCalledWith(
+        expect.objectContaining({ frequency: 'WEEKLY' })
+      );
+    });
+  });
+
   it('does not request an instant quote or allow booking for services requiring assessment', async () => {
     (cleaningCustomerApi.getServices as any).mockResolvedValue([
       {

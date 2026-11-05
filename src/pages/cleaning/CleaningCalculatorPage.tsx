@@ -5,6 +5,7 @@ import { cleaningCustomerApi, SavedProperty } from '../../api/cleaningCustomer';
 import {
   PriceSnapshot,
   SuppliesPreference,
+  CleaningFrequency,
 } from '../../api/bookings';
 import { CustomerLayout } from '../../components/layout/CustomerLayout';
 import { Card } from '../../components/common/Card';
@@ -90,6 +91,7 @@ export const CleaningCalculatorPage: React.FC = () => {
 
   // Job preparation preference; it does not affect the price.
   const [suppliesPreference, setSuppliesPreference] = useState<SuppliesPreference>('SUPPLIES_INCLUDED');
+  const [selectedFrequency, setSelectedFrequency] = useState<CleaningFrequency>('ONE_TIME');
 
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [isLegacyProperty, setIsLegacyProperty] = useState<boolean>(false);
@@ -125,6 +127,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   // Out-of-order response protection ref
   const quoteRequestIdRef = useRef<number>(0);
   const selectedService = services.find((service) => service.id === selectedServiceId);
+  const frequencyPromotionsEnabled = selectedService?.frequencyPromotionsEnabled === true;
   const assessmentRequired = Boolean(selectedService?.requiresAssessment || quoteRequiresAssessment);
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
@@ -245,6 +248,7 @@ export const CleaningCalculatorPage: React.FC = () => {
           numberOfFloors,
           squareMeters: sqMetersValue,
           suppliesPreference,
+          ...(frequencyPromotionsEnabled ? { frequency: selectedFrequency } : {}),
           addons: addonPayload,
           dishwashingItems: dishwashingItemsPayload,
         });
@@ -283,6 +287,8 @@ export const CleaningCalculatorPage: React.FC = () => {
     dontKnowArea,
     squareMetersInput,
     suppliesPreference,
+    selectedFrequency,
+    frequencyPromotionsEnabled,
     selectedService?.requiresAssessment,
     selectedAddons,
     selectedDishwashingQuantities,
@@ -366,6 +372,7 @@ export const CleaningCalculatorPage: React.FC = () => {
         serviceId: selectedServiceId,
         scheduledAt,
         suppliesPreference,
+        ...(frequencyPromotionsEnabled ? { frequency: selectedFrequency } : {}),
         customerNote: customerNote.trim(),
         addons: addonPayload,
         dishwashingItems: dishwashingPayload,
@@ -455,7 +462,10 @@ export const CleaningCalculatorPage: React.FC = () => {
                     <button
                       key={svc.id}
                       type="button"
-                      onClick={() => setSelectedServiceId(svc.id)}
+                      onClick={() => {
+                        setSelectedServiceId(svc.id);
+                        setSelectedFrequency('ONE_TIME');
+                      }}
                       className={`text-left p-4 sm:p-5 rounded-2xl border-2 transition-all relative ${
                         isSelected
                           ? 'border-emerald-600 bg-emerald-50/50 shadow-xs'
@@ -688,7 +698,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                 <span className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-extrabold">
                   3
                 </span>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900">Supplies & preparation</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Preparation & frequency</h3>
               </div>
 
               <div className="space-y-2.5 pt-2 sm:pt-3">
@@ -719,6 +729,41 @@ export const CleaningCalculatorPage: React.FC = () => {
                   ))}
                 </div>
               </div>
+              {frequencyPromotionsEnabled && (
+                <div className="space-y-3 border-t border-slate-100 pt-4">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Service frequency
+                  </label>
+                  <p className="text-xs leading-relaxed text-slate-600">
+                    Choose the frequency rate for this booking. It does not schedule future visits or recurring payments.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { id: 'ONE_TIME' as const, label: 'One-time', discount: 0 },
+                      { id: 'WEEKLY' as const, label: 'Weekly', discount: selectedService?.weeklyDiscountPercent || 0 },
+                      { id: 'BI_WEEKLY' as const, label: 'Every 2 weeks', discount: selectedService?.biWeeklyDiscountPercent || 0 },
+                      { id: 'MONTHLY' as const, label: 'Monthly', discount: selectedService?.monthlyDiscountPercent || 0 },
+                    ].map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setSelectedFrequency(option.id)}
+                        className={`p-3.5 text-left rounded-xl border text-xs transition-all ${
+                          selectedFrequency === option.id
+                            ? 'border-emerald-600 bg-emerald-50/50 font-bold text-slate-900'
+                            : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                        }`}
+                        aria-pressed={selectedFrequency === option.id}
+                      >
+                        <span className="block font-bold">{option.label}</span>
+                        <span className="block mt-1 text-[10px] text-slate-500">
+                          {option.discount > 0 ? `Save ${option.discount}% on cleaning` : 'Standard rate'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </Card>
 
             {/* Step 4: Add-Ons & Quantity-Based Dishwashing Catalogue */}
@@ -1050,6 +1095,16 @@ export const CleaningCalculatorPage: React.FC = () => {
                     <div className="flex justify-between text-slate-600">
                       <span>Minimum Price Adjustment</span>
                       <span>+{formatNaira(quoteSnapshot.minimumAdjustment)}</span>
+                    </div>
+                  )}
+                  {!!quoteSnapshot.frequencyDiscount && quoteSnapshot.frequencyDiscount !== 0 && (
+                    <div className="flex justify-between text-emerald-700 font-semibold">
+                      <span>
+                        Frequency discount{quoteSnapshot.frequencyDiscountPercent
+                          ? ` (${quoteSnapshot.frequencyDiscountPercent}%)`
+                          : ''}
+                      </span>
+                      <span>{formatNaira(quoteSnapshot.frequencyDiscount)}</span>
                     </div>
                   )}
 
