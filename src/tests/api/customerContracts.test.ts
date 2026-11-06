@@ -49,3 +49,11 @@ it('saves a cleaning address through the customer endpoint', async () => {
   await cleaningCustomerApi.createSavedProperty(address);
   expect(apiClient.post).toHaveBeenCalledWith('/cleaning/properties', address);
 });
+
+it('clears malformed saved cleaning access instructions before they reach booking updates', async () => {
+  vi.mocked(apiClient.get).mockResolvedValueOnce({
+    data: [{ id: 1, name: 'Home', accessInstructions: { gateCode: '1234' } }],
+  });
+  const [property] = await cleaningCustomerApi.getSavedProperties();
+  expect(property.accessInstructions).toBeUndefined();
+});

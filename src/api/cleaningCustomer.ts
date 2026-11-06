@@ -30,6 +30,14 @@ export interface SavedProperty {
   updatedAt?: string;
 }
 
+function normalizeSavedProperty(property: SavedProperty): SavedProperty {
+  return {
+    ...property,
+    accessInstructions:
+      typeof property.accessInstructions === 'string' ? property.accessInstructions : undefined,
+  };
+}
+
 export interface DishwashingItem {
   id: number;
   name: string;
@@ -132,17 +140,17 @@ export const cleaningCustomerApi = {
 
   getSavedProperties: async (): Promise<SavedProperty[]> => {
     const res = await apiClient.get<SavedProperty[]>('/cleaning/properties');
-    return res.data;
+    return res.data.map(normalizeSavedProperty);
   },
 
   createSavedProperty: async (payload: Omit<SavedProperty, 'id'>): Promise<SavedProperty> => {
     const res = await apiClient.post<SavedProperty>('/cleaning/properties', payload);
-    return res.data;
+    return normalizeSavedProperty(res.data);
   },
 
   updateSavedProperty: async (id: number, payload: Partial<SavedProperty>): Promise<SavedProperty> => {
     const res = await apiClient.put<SavedProperty>(`/cleaning/properties/${id}`, payload);
-    return res.data;
+    return normalizeSavedProperty(res.data);
   },
 
   deleteSavedProperty: async (id: number): Promise<{ message: string }> => {
