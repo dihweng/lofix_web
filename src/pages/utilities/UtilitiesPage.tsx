@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { PlanSelectorModal } from '../../components/utilities/PlanSelectorModal';
 import { PaymentModal } from '../../components/payment/PaymentModal';
 import { ElectricityReceiptModal } from '../../components/utilities/ElectricityReceiptModal';
+import { getFriendlyErrorMessage } from '../../utils/errorMessages';
 import {
   Zap,
   Wifi,
@@ -276,7 +277,7 @@ export const UtilitiesPage: React.FC = () => {
     } catch (err: any) {
       if (currentVerifyId === verifyRequestIdRef.current) {
         setElectricityVerification(null);
-        const serverDetail = err.response?.data?.message || err.message || 'Meter verification failed.';
+        const serverDetail = getFriendlyErrorMessage(err, 'Meter verification failed.');
         addToast('error', serverDetail);
       }
     } finally {
@@ -313,7 +314,7 @@ export const UtilitiesPage: React.FC = () => {
     } catch (err: any) {
       if (currentVerifyId === verifyRequestIdRef.current) {
         setCableVerification(null);
-        const serverDetail = err.response?.data?.message || err.message || 'Smartcard verification failed.';
+        const serverDetail = getFriendlyErrorMessage(err, 'Smartcard verification failed.');
         addToast('error', serverDetail);
       }
     } finally {
@@ -411,7 +412,7 @@ export const UtilitiesPage: React.FC = () => {
       setOrderPreview(orderResult);
       addToast('success', `Order #${orderResult.orderId} created successfully! Please review server pricing.`);
     } catch (err: any) {
-      addToast('error', err.response?.data?.message || err.message || 'Order creation failed.');
+      addToast('error', getFriendlyErrorMessage(err, 'Order creation failed.'));
     } finally {
       setIsReviewingOrder(false);
     }
@@ -516,7 +517,7 @@ export const UtilitiesPage: React.FC = () => {
                       <span>Failed to load electricity catalogue</span>
                     </div>
                     <p className="text-[11px] text-red-700">
-                      {(catalogueError as any)?.message || 'Server error loading catalogue. Please try again.'}
+                      {getFriendlyErrorMessage(catalogueError, 'Unable to load electricity catalogue. Please try again.')}
                     </p>
                     <Button variant="outline" size="sm" onClick={() => refetchCatalogue()}>
                       Retry Loading Catalogue
@@ -737,7 +738,7 @@ export const UtilitiesPage: React.FC = () => {
                   <div className="p-6 bg-red-50 border-red-200 text-xs text-red-900">
                     <AlertCircle className="w-5 h-5 text-red-600 mb-2" />
                     <p className="font-bold">Failed to load services</p>
-                    <p>{(servicesError as any)?.message || 'Server error loading VTpass services.'}</p>
+                    <p>{getFriendlyErrorMessage(servicesError, 'Unable to load service providers. Please try again.')}</p>
                   </div>
                 ) : services.length === 0 ? (
                   <div className="p-6 text-center text-xs text-slate-500">
