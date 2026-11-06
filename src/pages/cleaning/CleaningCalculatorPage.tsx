@@ -123,6 +123,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   const [checkoutTransactionId, setCheckoutTransactionId] = useState<number | null>(null);
   const [isPropertyManagerOpen, setIsPropertyManagerOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Out-of-order response protection ref
@@ -1225,9 +1226,9 @@ export const CleaningCalculatorPage: React.FC = () => {
 
       <AuthModals
         isOpen={isAuthModalOpen}
-        mode="login"
+        mode={authMode}
         onClose={() => setIsAuthModalOpen(false)}
-        onSwitchMode={() => {}}
+        onSwitchMode={(mode) => setAuthMode(mode)}
       />
 
       <PaymentModal

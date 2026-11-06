@@ -55,6 +55,7 @@ export const ShortletDetailPage: React.FC = () => {
   const [checkoutTransactionId, setCheckoutTransactionId] = useState<number | null>(null);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (type: 'success' | 'error' | 'info', message: string) => {
@@ -78,6 +79,7 @@ export const ShortletDetailPage: React.FC = () => {
 
     if (!isAuthenticated) {
       addToast('info', 'Please sign in or register to complete your shortlet booking.');
+      setAuthMode('login');
       setIsAuthModalOpen(true);
       return;
     }
@@ -257,9 +259,9 @@ export const ShortletDetailPage: React.FC = () => {
 
       <AuthModals
         isOpen={isAuthModalOpen}
-        mode="login"
+        mode={authMode}
         onClose={() => setIsAuthModalOpen(false)}
-        onSwitchMode={() => {}}
+        onSwitchMode={(mode) => setAuthMode(mode)}
       />
 
       <PaymentModal
