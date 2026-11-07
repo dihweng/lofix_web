@@ -19,6 +19,7 @@ import { CleaningBooking } from '../../api/bookings';
 import { LiveJobTrackingModal } from '../../components/cleaning/LiveJobTrackingModal';
 import { ReviewModal } from '../../components/cleaning/ReviewModal';
 import { PaymentModal } from '../../components/payment/PaymentModal';
+import { RescheduleCancelModal } from '../../components/cleaning/RescheduleCancelModal';
 import { SupportTicketModal } from '../../components/support/SupportTicketModal';
 import { formatNaira } from '../../utils/money';
 import { formatDate, formatStatus } from '../../utils/formatters';
@@ -47,6 +48,7 @@ import {
   Lock,
   Trash2,
   Smartphone,
+  CreditCard,
 } from 'lucide-react';
 
 export const UserDashboardPage: React.FC = () => {
@@ -125,6 +127,7 @@ export const UserDashboardPage: React.FC = () => {
   const [checkoutTransactionId, setCheckoutTransactionId] = useState<number | null>(null);
   const [trackingBooking, setTrackingBooking] = useState<CleaningBooking | null>(null);
   const [reviewBooking, setReviewBooking] = useState<CleaningBooking | null>(null);
+  const [cancellationBooking, setCancellationBooking] = useState<CleaningBooking | null>(null);
   const [supportModalOrder, setSupportModalOrder] = useState<any | null>(null);
 
   const [title, setTitle] = useState(user?.title || 'Mr');
@@ -736,7 +739,31 @@ export const UserDashboardPage: React.FC = () => {
                               </Button>
                             )}
 
-                            {!isCompleted && (
+                            {b.status === 'PAYMENT_PENDING' && (
+                              <>
+                                <Button
+                                  type="button"
+                                  variant="primary"
+                                  size="sm"
+                                  className="font-bold text-xs"
+                                  onClick={() => setCheckoutTransactionId(b.transactionId)}
+                                  leftIcon={<CreditCard className="w-3.5 h-3.5" />}
+                                >
+                                  Complete Payment
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="font-bold text-xs"
+                                  onClick={() => setCancellationBooking(b)}
+                                >
+                                  Cancel Request
+                                </Button>
+                              </>
+                            )}
+
+                            {!isCompleted && b.status !== 'PAYMENT_PENDING' && (
                               <Button
                                 type="button"
                                 variant="outline"
@@ -1490,6 +1517,17 @@ export const UserDashboardPage: React.FC = () => {
           refetchCleaning();
           refetchShortlets();
           addToast('success', 'Payment verified successfully!');
+        }}
+      />
+
+      <RescheduleCancelModal
+        isOpen={!!cancellationBooking}
+        booking={cancellationBooking}
+        mode="cancel"
+        onClose={() => setCancellationBooking(null)}
+        onSuccess={() => {
+          refetchCleaning();
+          addToast('success', 'Cleaning request cancelled.');
         }}
       />
 
