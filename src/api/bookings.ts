@@ -34,9 +34,12 @@ export interface PropertySnapshot {
 
 export interface PriceSnapshotAddon {
   addonId: number;
+  name?: string;
   addonName?: string;
   quantity: number;
-  price: number;
+  unitPrice?: number;
+  price?: number;
+  total?: number;
 }
 
 export interface PriceSnapshotDishwashingItem {
@@ -45,6 +48,7 @@ export interface PriceSnapshotDishwashingItem {
   name?: string;
   unit?: 'PIECE' | 'PAIR' | 'SET' | string;
   quantity: number;
+  unitPriceKobo?: number;
   unitPrice?: number;
   price?: number;
   total?: number;
@@ -52,6 +56,9 @@ export interface PriceSnapshotDishwashingItem {
 
 export interface PriceSnapshot {
   basePrice: number;
+  pricePerRoom?: number;
+  pricePerBathroom?: number;
+  pricePerFloor?: number;
   roomCharges: number;
   bathroomCharges: number;
   floorCharges: number;

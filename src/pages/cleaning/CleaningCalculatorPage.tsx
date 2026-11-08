@@ -82,6 +82,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   const [numberOfLivingRooms, setNumberOfLivingRooms] = useState<number>(0);
   const [numberOfBathrooms, setNumberOfBathrooms] = useState<number>(1);
   const [numberOfFloors, setNumberOfFloors] = useState<number>(1);
+  const [roomConfigurationConfirmed, setRoomConfigurationConfirmed] = useState(false);
 
   // Optional Area
   const [dontKnowArea, setDontKnowArea] = useState<boolean>(true);
@@ -140,26 +141,6 @@ export const CleaningCalculatorPage: React.FC = () => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  useEffect(() => {
-    if (services.length > 0 && !selectedServiceId) {
-      setSelectedServiceId(services[0].id);
-    }
-  }, [services, selectedServiceId]);
-
-  useEffect(() => {
-    if (propertyTypes.length > 0 && !selectedPropertyTypeId) {
-      setSelectedPropertyTypeId(propertyTypes[0].id);
-    }
-  }, [propertyTypes, selectedPropertyTypeId]);
-
-  useEffect(() => {
-    if (savedProperties.length > 0 && !selectedPropertyId) {
-      const firstProp = savedProperties[0];
-      setSelectedPropertyId(firstProp.id);
-      syncDimensionsFromProperty(firstProp);
-    }
-  }, [savedProperties, selectedPropertyId]);
-
   const syncDimensionsFromProperty = (prop: SavedProperty) => {
     if (prop.propertyTypeId) setSelectedPropertyTypeId(prop.propertyTypeId);
     if (prop.numberOfBathrooms) setNumberOfBathrooms(prop.numberOfBathrooms);
@@ -191,6 +172,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   const handleSelectSavedProperty = (prop: SavedProperty) => {
     setSelectedPropertyId(prop.id);
     syncDimensionsFromProperty(prop);
+    setRoomConfigurationConfirmed(true);
   };
 
   const handleDishwashingQuantityChange = (itemId: number, delta: number) => {
@@ -212,9 +194,15 @@ export const CleaningCalculatorPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!selectedServiceId || !selectedPropertyTypeId) return;
-
     const currentRequestId = ++quoteRequestIdRef.current;
+
+    if (!selectedServiceId || !selectedPropertyTypeId || !roomConfigurationConfirmed) {
+      setQuoteSnapshot(null);
+      setQuoteError(null);
+      setQuoteRequiresAssessment(false);
+      setIsCalculating(false);
+      return;
+    }
 
     if (selectedService?.requiresAssessment) {
       setQuoteSnapshot(null);
@@ -224,10 +212,12 @@ export const CleaningCalculatorPage: React.FC = () => {
       return;
     }
 
+    setQuoteSnapshot(null);
+    setIsCalculating(true);
+    setQuoteError(null);
+    setQuoteRequiresAssessment(false);
+
     const calculate = async () => {
-      setIsCalculating(true);
-      setQuoteError(null);
-      setQuoteRequiresAssessment(false);
       try {
         const addonPayload = Object.entries(selectedAddons)
           .filter(([_, qty]) => qty > 0)
@@ -276,6 +266,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   }, [
     selectedServiceId,
     selectedPropertyTypeId,
+    roomConfigurationConfirmed,
     numberOfBedrooms,
     numberOfLivingRooms,
     numberOfBathrooms,
@@ -315,6 +306,16 @@ export const CleaningCalculatorPage: React.FC = () => {
 
     if (!selectedServiceId) {
       addToast('error', 'Please select a cleaning service.');
+      return;
+    }
+
+    if (!selectedPropertyTypeId || !roomConfigurationConfirmed) {
+      addToast('error', 'Please select a property type and confirm the room counts.');
+      return;
+    }
+
+    if (!quoteSnapshot) {
+      addToast('error', 'Please wait for a valid cleaning quote before booking.');
       return;
     }
 
@@ -405,6 +406,16 @@ export const CleaningCalculatorPage: React.FC = () => {
   };
 
   const totalRoomsCount = numberOfBedrooms + numberOfLivingRooms;
+  const cleaningSubtotalBeforeMinimum =
+    quoteSnapshot
+      ? quoteSnapshot.basePrice +
+        quoteSnapshot.roomCharges +
+        quoteSnapshot.bathroomCharges +
+        quoteSnapshot.floorCharges +
+        quoteSnapshot.sqMeterCharges
+      : 0;
+  const cleaningSubtotalAfterMinimum =
+    cleaningSubtotalBeforeMinimum + (quoteSnapshot?.minimumAdjustment || 0);
 
   const handleNextStep = () => {
     if (currentStep === 1 && !selectedServiceId) {
@@ -413,6 +424,10 @@ export const CleaningCalculatorPage: React.FC = () => {
     }
     if (currentStep === 2 && !selectedPropertyTypeId) {
       addToast('error', 'Please select a property type.');
+      return;
+    }
+    if (currentStep === 2 && !roomConfigurationConfirmed) {
+      addToast('error', 'Please review and confirm the room counts before continuing.');
       return;
     }
     if (currentStep === 5 && !selectedPropertyId) {
@@ -755,6 +770,21 @@ export const CleaningCalculatorPage: React.FC = () => {
                       placeholder="e.g. 100"
                     />
                   )}
+                </div>
+
+                <div className="pt-1">
+                  <p className="text-xs text-slate-600 mb-3">
+                    Review the counts above. We will not show a price until you confirm this property setup.
+                  </p>
+                  <Button
+                    type="button"
+                    variant={roomConfigurationConfirmed ? 'outline' : 'primary'}
+                    size="md"
+                    disabled={!selectedPropertyTypeId}
+                    onClick={() => setRoomConfigurationConfirmed(true)}
+                  >
+                    {roomConfigurationConfirmed ? 'Room counts confirmed' : 'Use these room counts'}
+                  </Button>
                 </div>
               </Card>
             )}
@@ -1111,43 +1141,119 @@ export const CleaningCalculatorPage: React.FC = () => {
                 </div>
               ) : quoteSnapshot ? (
                 <div className="space-y-2.5 py-3 text-xs">
+                  <p className="text-[11px] leading-relaxed text-slate-500">
+                    The quote shows the starting price, room-based charges, any minimum-price adjustment, optional extras, discounts, and the fixed service fee.
+                  </p>
                   <div className="flex justify-between text-slate-600 font-semibold border-b border-slate-100 pb-2">
-                    <span>Base Cleaning ({quoteSnapshot.serviceName || 'Standard'})</span>
+                    <span>Base cleaning price ({quoteSnapshot.serviceName || 'Standard'})</span>
                     <span className="text-slate-900">
-                      {formatNaira(quoteSnapshot.basePrice || quoteSnapshot.minimumPrice || 0)}
+                      {formatNaira(quoteSnapshot.basePrice)}
                     </span>
                   </div>
 
-                  {quoteSnapshot.roomCharges > 0 && (
+                  {quoteSnapshot.pricePerRoom !== undefined ? (
                     <div className="flex justify-between text-slate-600">
                       <span>
-                        Room Charges ({numberOfBedrooms} beds + {numberOfLivingRooms} parlours = {totalRoomsCount} rooms)
+                        Room charges ({numberOfBedrooms} bedrooms + {numberOfLivingRooms} living rooms = {totalRoomsCount} rooms × {formatNaira(quoteSnapshot.pricePerRoom)} per room)
                       </span>
                       <span>+{formatNaira(quoteSnapshot.roomCharges)}</span>
                     </div>
-                  )}
-                  {quoteSnapshot.bathroomCharges > 0 && (
+                  ) : (
                     <div className="flex justify-between text-slate-600">
-                      <span>Bathroom Charges ({numberOfBathrooms} baths)</span>
+                      <span>Room charges ({numberOfBedrooms} bedrooms + {numberOfLivingRooms} living rooms = {totalRoomsCount} rooms)</span>
+                      <span>+{formatNaira(quoteSnapshot.roomCharges)}</span>
+                    </div>
+                  )}
+                  {quoteSnapshot.pricePerBathroom !== undefined ? (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Bathroom charges ({numberOfBathrooms} × {formatNaira(quoteSnapshot.pricePerBathroom)} per bathroom)</span>
+                      <span>+{formatNaira(quoteSnapshot.bathroomCharges)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Bathroom charges ({numberOfBathrooms} bathrooms)</span>
                       <span>+{formatNaira(quoteSnapshot.bathroomCharges)}</span>
                     </div>
                   )}
-                  {quoteSnapshot.floorCharges > 0 && (
+                  {quoteSnapshot.pricePerFloor !== undefined ? (
                     <div className="flex justify-between text-slate-600">
-                      <span>Floor Charges ({numberOfFloors} floors)</span>
+                      <span>Floor charges ({numberOfFloors} × {formatNaira(quoteSnapshot.pricePerFloor)} per floor)</span>
+                      <span>+{formatNaira(quoteSnapshot.floorCharges)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Floor charges ({numberOfFloors} floors)</span>
                       <span>+{formatNaira(quoteSnapshot.floorCharges)}</span>
                     </div>
                   )}
-                  {quoteSnapshot.addonsTotal > 0 && (
-                    <div className="flex justify-between text-slate-600 font-semibold">
-                      <span>Add-ons Total</span>
-                      <span>+{formatNaira(quoteSnapshot.addonsTotal)}</span>
+                  <div className="flex justify-between border-t border-slate-100 pt-2 text-slate-700">
+                    <span>Cleaning subtotal before minimum price</span>
+                    <span>{formatNaira(cleaningSubtotalBeforeMinimum)}</span>
+                  </div>
+                  {quoteSnapshot.minimumPrice !== undefined && quoteSnapshot.minimumPrice > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Minimum cleaning price</span>
+                      <span>{formatNaira(quoteSnapshot.minimumPrice)}</span>
                     </div>
                   )}
-                  {(quoteSnapshot.dishwashingTotal || 0) > 0 && (
+                  {(quoteSnapshot.minimumAdjustment || 0) > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Minimum-price adjustment</span>
+                      <span>+{formatNaira(quoteSnapshot.minimumAdjustment || 0)}</span>
+                    </div>
+                  )}
+                  {quoteSnapshot.minimumPrice !== undefined && (
                     <div className="flex justify-between text-slate-600 font-semibold">
-                      <span>Dishwashing Total</span>
+                      <span>Cleaning subtotal after minimum price</span>
+                      <span>{formatNaira(cleaningSubtotalAfterMinimum)}</span>
+                    </div>
+                  )}
+                  {quoteSnapshot.addons?.length ? quoteSnapshot.addons.map((addon) => {
+                    const unitPrice = addon.unitPrice ?? addon.price;
+                    const total = addon.total ?? (unitPrice !== undefined ? unitPrice * addon.quantity : undefined);
+                    return (
+                      <div key={addon.addonId} className="flex justify-between text-slate-600">
+                        <span>
+                          {addon.name || addon.addonName || 'Add-on'}
+                          {unitPrice !== undefined ? ` (${addon.quantity} × ${formatNaira(unitPrice)})` : ` (${addon.quantity})`}
+                        </span>
+                        <span>+{formatNaira(total ?? 0)}</span>
+                      </div>
+                    );
+                  }) : quoteSnapshot.addonsTotal > 0 ? (
+                    <div className="flex justify-between text-slate-600 font-semibold">
+                      <span>Add-ons</span>
+                      <span>+{formatNaira(quoteSnapshot.addonsTotal)}</span>
+                    </div>
+                  ) : null}
+                  {quoteSnapshot.dishwashingItems?.length ? quoteSnapshot.dishwashingItems.map((item) => {
+                    const unitPrice = item.unitPriceKobo ?? item.unitPrice ?? item.price;
+                    const total = item.total ?? (unitPrice !== undefined ? unitPrice * item.quantity : undefined);
+                    return (
+                      <div key={item.itemId} className="flex justify-between text-slate-600">
+                        <span>
+                          {item.name || item.itemName || 'Dishwashing'}
+                          {unitPrice !== undefined ? ` (${item.quantity} × ${formatNaira(unitPrice)})` : ` (${item.quantity})`}
+                        </span>
+                        <span>+{formatNaira(total ?? 0)}</span>
+                      </div>
+                    );
+                  }) : (quoteSnapshot.dishwashingTotal || 0) > 0 ? (
+                    <div className="flex justify-between text-slate-600 font-semibold">
+                      <span>Dishwashing</span>
                       <span>+{formatNaira(quoteSnapshot.dishwashingTotal || 0)}</span>
+                    </div>
+                  ) : null}
+                  {(quoteSnapshot.furnishingSurcharge || 0) !== 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Furnishing adjustment</span>
+                      <span>{formatNaira(quoteSnapshot.furnishingSurcharge || 0)}</span>
+                    </div>
+                  )}
+                  {(quoteSnapshot.suppliesDiscount || 0) !== 0 && (
+                    <div className="flex justify-between text-emerald-700 font-semibold">
+                      <span>Supplies discount</span>
+                      <span>{formatNaira(quoteSnapshot.suppliesDiscount || 0)}</span>
                     </div>
                   )}
                   {!!quoteSnapshot.frequencyDiscount && quoteSnapshot.frequencyDiscount !== 0 && (
@@ -1160,6 +1266,13 @@ export const CleaningCalculatorPage: React.FC = () => {
                       <span>{formatNaira(quoteSnapshot.frequencyDiscount)}</span>
                     </div>
                   )}
+                  <div className="flex justify-between text-slate-600">
+                    <span>Service fee (fixed)</span>
+                    <span>
+                      {quoteSnapshot.serviceFee > 0 ? '+' : ''}
+                      {formatNaira(quoteSnapshot.serviceFee)}
+                    </span>
+                  </div>
 
                   <div className="border-t border-slate-200 pt-3 flex justify-between items-baseline">
                     <span className="font-bold text-slate-900 text-sm">Total Price</span>
@@ -1170,7 +1283,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="py-8 text-center text-xs text-slate-400">
-                  Select parameters to view price preview
+                  Choose a cleaning service and property type, review the room counts, then select “Use these room counts” to see your price.
                 </div>
               )}
 
@@ -1191,7 +1304,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                   size="md"
                   className="w-full font-bold text-xs sm:text-sm"
                   isLoading={isBookingLoading}
-                  disabled={isBookingLoading || isCalculating || !!quoteError || assessmentRequired}
+                  disabled={isBookingLoading || isCalculating || !!quoteError || assessmentRequired || !quoteSnapshot}
                   onClick={handleBookNow}
                   leftIcon={<Sparkles className="w-4 h-4" />}
                 >

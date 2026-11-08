@@ -67,7 +67,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     ]);
   });
 
-  const renderComponent = () =>
+  const renderPage = () =>
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
@@ -76,9 +76,47 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       </QueryClientProvider>
     );
 
+  const renderComponent = async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /Standard Cleaning|Post-Construction Cleaning/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Flat / Apartment' }));
+    fireEvent.click(await screen.findByRole('button', { name: /My Lekki Flat|Legacy Victoria Island Flat/ }));
+  };
+
+  it('does not request or show a quote until the customer selects and confirms a configuration', async () => {
+    (cleaningCustomerApi.calculateQuote as any).mockResolvedValue({
+      basePrice: 500000,
+      roomCharges: 0,
+      bathroomCharges: 0,
+      floorCharges: 0,
+      sqMeterCharges: 0,
+      addonsTotal: 0,
+      serviceFee: 0,
+      total: 500000,
+      serviceName: 'Standard Cleaning',
+    });
+
+    renderPage();
+    expect(await screen.findByText(/Choose a cleaning service and property type/i)).toBeInTheDocument();
+    expect(cleaningCustomerApi.calculateQuote).not.toHaveBeenCalled();
+    expect(screen.queryByText('Total Price')).not.toBeInTheDocument();
+
+    fireEvent.click(await screen.findByRole('button', { name: /Standard Cleaning/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Flat / Apartment' }));
+    expect(cleaningCustomerApi.calculateQuote).not.toHaveBeenCalled();
+    expect(screen.queryByText('Total Price')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Use these room counts/ }));
+    await waitFor(() => expect(cleaningCustomerApi.calculateQuote).toHaveBeenCalled());
+    expect(await screen.findByText('Total Price')).toBeInTheDocument();
+  });
+
   it('calculates quote for 3 bedrooms + 2 parlours (5 rooms total) and null area', async () => {
     (cleaningCustomerApi.calculateQuote as any).mockResolvedValue({
       basePrice: 500000,
+      pricePerRoom: 100000,
+      pricePerBathroom: 100000,
+      pricePerFloor: 0,
       roomCharges: 500000, // 5 rooms
       bathroomCharges: 200000,
       floorCharges: 0,
@@ -95,7 +133,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       recommendedCleaners: 2,
     });
 
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       expect(cleaningCustomerApi.calculateQuote).toHaveBeenCalledWith(
@@ -112,9 +150,37 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Room Charges \(3 beds \+ 2 parlours = 5 rooms\)/i)
+        screen.getByText(/Room charges \(3 bedrooms \+ 2 living rooms = 5 rooms × ₦1,000\.00 per room\)/i)
       ).toBeInTheDocument();
     });
+  });
+
+  it('explains the starting price and itemizes minimum-price and service-fee additions', async () => {
+    (cleaningCustomerApi.calculateQuote as any).mockResolvedValue({
+      basePrice: 500000,
+      roomCharges: 0,
+      bathroomCharges: 0,
+      floorCharges: 0,
+      sqMeterCharges: 0,
+      minimumPrice: 600000,
+      minimumAdjustment: 100000,
+      addonsTotal: 0,
+      dishwashingTotal: 0,
+      frequencyDiscount: 0,
+      serviceFee: 50000,
+      total: 650000,
+      serviceName: 'Standard Cleaning',
+    });
+
+    await renderComponent();
+
+    expect(await screen.findByText(/Base cleaning price \(Standard Cleaning\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/quote shows the starting price/i)).toBeInTheDocument();
+    expect(screen.getByText('Minimum-price adjustment')).toBeInTheDocument();
+    expect(screen.getByText('Minimum cleaning price')).toBeInTheDocument();
+    expect(screen.getByText('Service fee (fixed)')).toBeInTheDocument();
+    expect(screen.getByText('₦500.00')).toBeInTheDocument();
+    expect(screen.getByText('₦6,500.00')).toBeInTheDocument();
   });
 
   it('renders dishwashing catalogue items and passes dishwashingItems in quote & booking payload', async () => {
@@ -146,7 +212,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       status: 'PAYMENT_PENDING',
     });
 
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       expect(screen.getAllByText(/Glass Cups/i)[0]).toBeInTheDocument();
@@ -211,7 +277,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       serviceName: 'Standard Cleaning',
     });
 
-    renderComponent();
+    await renderComponent();
 
     await waitFor(() => {
       expect(screen.getByText(/Selected property has a legacy room total \(4 rooms\)/i)).toBeInTheDocument();
@@ -231,7 +297,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       serviceName: 'Standard Cleaning',
     });
 
-    renderComponent();
+    await renderComponent();
 
     expect(await screen.findByText(/This preference is shared for job preparation and does not change the price/i))
       .toBeInTheDocument();
@@ -273,7 +339,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       status: 'PAYMENT_PENDING',
     });
 
-    renderComponent();
+    await renderComponent();
 
     const weeklyOption = await screen.findByRole('button', { name: /Weekly Save 15% on cleaning/i });
     expect(screen.getByRole('button', { name: /Every 2 weeks Save 10% on cleaning/i })).toBeInTheDocument();
@@ -308,7 +374,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       },
     ]);
 
-    renderComponent();
+    await renderComponent();
 
     expect(await screen.findByText('Assessment required')).toBeInTheDocument();
     expect(cleaningCustomerApi.calculateQuote).not.toHaveBeenCalled();
@@ -328,7 +394,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       },
     });
 
-    renderComponent();
+    await renderComponent();
 
     expect(await screen.findByText('Assessment required')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /book & proceed to checkout/i })).toBeDisabled();
