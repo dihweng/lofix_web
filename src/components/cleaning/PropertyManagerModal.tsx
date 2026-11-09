@@ -88,7 +88,7 @@ export const PropertyManagerModal: React.FC<PropertyManagerModalProps> = ({
     }
 
     setNumberOfBathrooms(prop.numberOfBathrooms);
-    setNumberOfFloors(prop.numberOfFloors);
+    setNumberOfFloors(prop.numberOfFloors ?? 0);
 
     if (prop.squareMeters !== undefined && prop.squareMeters !== null && prop.squareMeters > 0) {
       setDontKnowArea(false);

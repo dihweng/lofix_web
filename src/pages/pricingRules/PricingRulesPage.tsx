@@ -26,9 +26,7 @@ export const PricingRulesPage: React.FC = () => {
   const [basePrice, setBasePrice] = useState<string>('1000');
   const [pricePerRoom, setPricePerRoom] = useState<string>('100');
   const [pricePerBathroom, setPricePerBathroom] = useState<string>('50');
-  const [pricePerFloor, setPricePerFloor] = useState<string>('0');
   const [pricePerSqMeter, setPricePerSqMeter] = useState<string>('0');
-  const [minimumPrice, setMinimumPrice] = useState<string>('1000');
   const [serviceFee, setServiceFee] = useState<string>('0');
   const [active, setActive] = useState(true);
 
@@ -66,9 +64,7 @@ export const PricingRulesPage: React.FC = () => {
     setBasePrice('1000');
     setPricePerRoom('100');
     setPricePerBathroom('50');
-    setPricePerFloor('0');
     setPricePerSqMeter('0');
-    setMinimumPrice('1000');
     setServiceFee('0');
     setActive(true);
     setIsModalOpen(true);
@@ -81,9 +77,7 @@ export const PricingRulesPage: React.FC = () => {
     setBasePrice(koboToNaira(rule.basePrice).toString());
     setPricePerRoom(koboToNaira(rule.pricePerRoom).toString());
     setPricePerBathroom(koboToNaira(rule.pricePerBathroom).toString());
-    setPricePerFloor(koboToNaira(rule.pricePerFloor).toString());
     setPricePerSqMeter(koboToNaira(rule.pricePerSqMeter).toString());
-    setMinimumPrice(koboToNaira(rule.minimumPrice).toString());
     setServiceFee(koboToNaira(rule.serviceFee).toString());
     setActive(rule.active);
     setIsModalOpen(true);
@@ -100,9 +94,7 @@ export const PricingRulesPage: React.FC = () => {
         basePrice: nairaToKobo(basePrice),
         pricePerRoom: nairaToKobo(pricePerRoom),
         pricePerBathroom: nairaToKobo(pricePerBathroom),
-        pricePerFloor: nairaToKobo(pricePerFloor),
         pricePerSqMeter: nairaToKobo(pricePerSqMeter),
-        minimumPrice: nairaToKobo(minimumPrice),
         serviceFee: nairaToKobo(serviceFee),
         currency: 'NGN' as const,
         active,
@@ -167,14 +159,6 @@ export const PricingRulesPage: React.FC = () => {
       ),
     },
     {
-      header: 'Minimum Price',
-      cell: (rule) => (
-        <span className="font-mono text-xs text-slate-700">
-          {formatNaira(rule.minimumPrice)}
-        </span>
-      ),
-    },
-    {
       header: 'Service Fee',
       cell: (rule) => (
         <span className="font-mono text-xs text-slate-700">
@@ -208,7 +192,7 @@ export const PricingRulesPage: React.FC = () => {
   return (
     <PageLayout
       title="Pricing Rules"
-      subtitle="Configure pricing formulas for Service & Property Type combinations"
+      subtitle="Configure base, room, bathroom, and service-fee prices for each Service & Property Type pair"
       action={
         <Button
           variant="primary"
@@ -224,10 +208,10 @@ export const PricingRulesPage: React.FC = () => {
         <div className="p-4 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex items-start gap-3">
           <Info className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-sky-950">Pricing Rule Calculation Formula</p>
+            <p className="font-semibold text-sky-950">Cleaning Price Formula</p>
             <p className="mt-0.5 text-sky-800">
-              Total = <code className="bg-sky-100 px-1 rounded font-mono">MAX(Base + Room*N + Bath*N + Floor*N + Sqm*N, Minimum) + Addons + ServiceFee</code>.
-              Only 1 editable pricing rule is allowed per service & property type pair. Deactivate rules to disable booking for that pair.
+              <code className="bg-sky-100 px-1 rounded font-mono">Subtotal = Base + RoomRate*Rooms + BathroomRate*Bathrooms; Total = Subtotal - eligible discount + Add-ons + Dishwashing + ServiceFee</code>.
+              Floor count and property area do not change the price. There is no minimum-price adjustment.
             </p>
           </div>
         </div>
@@ -292,16 +276,6 @@ export const PricingRulesPage: React.FC = () => {
               />
 
               <Input
-                label="Minimum Price (₦)"
-                type="number"
-                step="0.01"
-                min="0"
-                value={minimumPrice}
-                onChange={(e) => setMinimumPrice(e.target.value)}
-                required
-              />
-
-              <Input
                 label="Price Per Room (₦)"
                 type="number"
                 step="0.01"
@@ -317,15 +291,6 @@ export const PricingRulesPage: React.FC = () => {
                 min="0"
                 value={pricePerBathroom}
                 onChange={(e) => setPricePerBathroom(e.target.value)}
-              />
-
-              <Input
-                label="Price Per Floor (₦)"
-                type="number"
-                step="0.01"
-                min="0"
-                value={pricePerFloor}
-                onChange={(e) => setPricePerFloor(e.target.value)}
               />
 
               <Input

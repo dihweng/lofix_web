@@ -153,10 +153,10 @@ export const DigitalReceiptModal: React.FC<DigitalReceiptModalProps> = ({
                   <span>+{formatNaira(cleaningBooking.priceSnapshot.bathroomCharges)}</span>
                 </div>
               )}
-              {cleaningBooking.priceSnapshot.floorCharges > 0 && (
+              {(cleaningBooking.priceSnapshot.floorCharges ?? 0) > 0 && (
                 <div className="flex justify-between">
-                  <span>Floor Charges</span>
-                  <span>+{formatNaira(cleaningBooking.priceSnapshot.floorCharges)}</span>
+                  <span>Historical floor charge (saved quote)</span>
+                  <span>+{formatNaira(cleaningBooking.priceSnapshot.floorCharges ?? 0)}</span>
                 </div>
               )}
 

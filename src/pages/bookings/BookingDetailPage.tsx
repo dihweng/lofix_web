@@ -338,7 +338,9 @@ export const BookingDetailPage: React.FC<BookingDetailPageProps> = ({
                   <div>Base Price: {formatNaira(price.basePrice)}</div>
                   <div>Room Charges: {formatNaira(price.roomCharges)}</div>
                   <div>Bath Charges: {formatNaira(price.bathroomCharges)}</div>
-                  <div>Floor Charges: {formatNaira(price.floorCharges)}</div>
+                  {price.floorCharges && price.floorCharges > 0 && (
+                    <div>Historical floor charge (saved quote): {formatNaira(price.floorCharges)}</div>
+                  )}
                   <div>Service Fee: {formatNaira(price.serviceFee)}</div>
                   <div>Addons Total: {formatNaira(price.addonsTotal)}</div>
                 </div>

@@ -88,7 +88,6 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       basePrice: 500000,
       roomCharges: 0,
       bathroomCharges: 0,
-      floorCharges: 0,
       sqMeterCharges: 0,
       addonsTotal: 0,
       serviceFee: 0,
@@ -116,10 +115,8 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       basePrice: 500000,
       pricePerRoom: 100000,
       pricePerBathroom: 100000,
-      pricePerFloor: 0,
       roomCharges: 500000, // 5 rooms
       bathroomCharges: 200000,
-      floorCharges: 0,
       sqMeterCharges: 0,
       addonsTotal: 0,
       dishwashingTotal: 0,
@@ -145,6 +142,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       );
     });
     const quotePayload = (cleaningCustomerApi.calculateQuote as any).mock.calls[0][0];
+    expect(quotePayload).not.toHaveProperty('numberOfFloors');
     expect(quotePayload).not.toHaveProperty('furnishingState');
     expect(quotePayload).not.toHaveProperty('frequency');
 
@@ -155,12 +153,12 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     });
   });
 
-  it('explains the starting price and itemizes minimum-price and service-fee additions', async () => {
+  it('shows the starting price and service fee without legacy floor or minimum-price rows', async () => {
     (cleaningCustomerApi.calculateQuote as any).mockResolvedValue({
       basePrice: 500000,
       roomCharges: 0,
       bathroomCharges: 0,
-      floorCharges: 0,
+      floorCharges: 30000,
       sqMeterCharges: 0,
       minimumPrice: 600000,
       minimumAdjustment: 100000,
@@ -176,8 +174,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
 
     expect(await screen.findByText(/Base cleaning price \(Standard Cleaning\)/i)).toBeInTheDocument();
     expect(screen.getByText(/quote shows the starting price/i)).toBeInTheDocument();
-    expect(screen.getByText('Minimum-price adjustment')).toBeInTheDocument();
-    expect(screen.getByText('Minimum cleaning price')).toBeInTheDocument();
+    expect(screen.queryByText(/floor charge|minimum-price adjustment|minimum cleaning price/i)).not.toBeInTheDocument();
     expect(screen.getByText('Service fee (fixed)')).toBeInTheDocument();
     expect(screen.getByText('₦500.00')).toBeInTheDocument();
     expect(screen.getByText('₦6,500.00')).toBeInTheDocument();
@@ -188,7 +185,6 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       basePrice: 500000,
       roomCharges: 500000,
       bathroomCharges: 200000,
-      floorCharges: 0,
       sqMeterCharges: 0,
       addonsTotal: 0,
       dishwashingTotal: 100000, // 2 x ₦500 = ₦1,000 = 100000 kobo
@@ -269,7 +265,6 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       basePrice: 500000,
       roomCharges: 400000,
       bathroomCharges: 200000,
-      floorCharges: 0,
       sqMeterCharges: 0,
       addonsTotal: 0,
       serviceFee: 50000,
@@ -289,7 +284,6 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       basePrice: 500000,
       roomCharges: 0,
       bathroomCharges: 0,
-      floorCharges: 0,
       sqMeterCharges: 0,
       addonsTotal: 0,
       serviceFee: 0,
@@ -323,7 +317,6 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       basePrice: 500000,
       roomCharges: 0,
       bathroomCharges: 0,
-      floorCharges: 0,
       sqMeterCharges: 0,
       addonsTotal: 0,
       frequencyDiscount: -75000,

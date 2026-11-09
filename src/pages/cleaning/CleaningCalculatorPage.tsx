@@ -77,11 +77,10 @@ export const CleaningCalculatorPage: React.FC = () => {
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedPropertyTypeId, setSelectedPropertyTypeId] = useState<number | null>(null);
 
-  // Split Room Counts — Defaults: Bedrooms = 1, Living = 0, Bathrooms = 1, Floors = 1, Kitchens = 1
+  // Split Room Counts — Defaults: Bedrooms = 1, Living = 0, Bathrooms = 1
   const [numberOfBedrooms, setNumberOfBedrooms] = useState<number>(1);
   const [numberOfLivingRooms, setNumberOfLivingRooms] = useState<number>(0);
   const [numberOfBathrooms, setNumberOfBathrooms] = useState<number>(1);
-  const [numberOfFloors, setNumberOfFloors] = useState<number>(1);
   const [roomConfigurationConfirmed, setRoomConfigurationConfirmed] = useState(false);
 
   // Optional Area
@@ -144,7 +143,6 @@ export const CleaningCalculatorPage: React.FC = () => {
   const syncDimensionsFromProperty = (prop: SavedProperty) => {
     if (prop.propertyTypeId) setSelectedPropertyTypeId(prop.propertyTypeId);
     if (prop.numberOfBathrooms) setNumberOfBathrooms(prop.numberOfBathrooms);
-    if (prop.numberOfFloors) setNumberOfFloors(prop.numberOfFloors);
 
     const hasSplit = prop.numberOfBedrooms !== undefined && prop.numberOfBedrooms !== null;
 
@@ -232,7 +230,6 @@ export const CleaningCalculatorPage: React.FC = () => {
           numberOfBedrooms,
           numberOfLivingRooms,
           numberOfBathrooms,
-          numberOfFloors,
           squareMeters: sqMetersValue,
           suppliesPreference,
           ...(frequencyPromotionsEnabled ? { frequency: selectedFrequency } : {}),
@@ -270,7 +267,6 @@ export const CleaningCalculatorPage: React.FC = () => {
     numberOfBedrooms,
     numberOfLivingRooms,
     numberOfBathrooms,
-    numberOfFloors,
     dontKnowArea,
     squareMetersInput,
     suppliesPreference,
@@ -333,7 +329,6 @@ export const CleaningCalculatorPage: React.FC = () => {
         targetProperty.numberOfBedrooms !== numberOfBedrooms ||
         targetProperty.numberOfLivingRooms !== numberOfLivingRooms ||
         targetProperty.numberOfBathrooms !== numberOfBathrooms ||
-        targetProperty.numberOfFloors !== numberOfFloors ||
         targetProperty.propertyTypeId !== selectedPropertyTypeId ||
         targetProperty.squareMeters !== sqMetersValue;
 
@@ -350,7 +345,7 @@ export const CleaningCalculatorPage: React.FC = () => {
           numberOfBedrooms,
           numberOfLivingRooms,
           numberOfBathrooms,
-          numberOfFloors,
+          numberOfFloors: targetProperty.numberOfFloors,
           squareMeters: sqMetersValue,
         });
         await refetchProperties();
@@ -406,16 +401,6 @@ export const CleaningCalculatorPage: React.FC = () => {
   };
 
   const totalRoomsCount = numberOfBedrooms + numberOfLivingRooms;
-  const cleaningSubtotalBeforeMinimum =
-    quoteSnapshot
-      ? quoteSnapshot.basePrice +
-        quoteSnapshot.roomCharges +
-        quoteSnapshot.bathroomCharges +
-        quoteSnapshot.floorCharges +
-        quoteSnapshot.sqMeterCharges
-      : 0;
-  const cleaningSubtotalAfterMinimum =
-    cleaningSubtotalBeforeMinimum + (quoteSnapshot?.minimumAdjustment || 0);
 
   const handleNextStep = () => {
     if (currentStep === 1 && !selectedServiceId) {
@@ -715,35 +700,11 @@ export const CleaningCalculatorPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Floors Counter */}
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <Layers className="w-4 h-4 text-emerald-600" /> Floors
-                      </span>
-                      <p className="text-[10px] text-slate-500">Building levels</p>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setNumberOfFloors(Math.max(1, numberOfFloors - 1))}
-                        className="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="w-6 text-center text-sm font-extrabold text-slate-900">
-                        {numberOfFloors}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setNumberOfFloors(numberOfFloors + 1)}
-                        className="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
                 </div>
+
+                <p className="text-[11px] text-slate-500">
+                  Floors are saved as property information for the cleaning team and do not affect your price.
+                </p>
 
                 <div className="space-y-2 p-4 bg-slate-50 rounded-xl border border-slate-200 mt-4">
                   <div className="flex items-center justify-between">
@@ -1142,7 +1103,7 @@ export const CleaningCalculatorPage: React.FC = () => {
               ) : quoteSnapshot ? (
                 <div className="space-y-2.5 py-3 text-xs">
                   <p className="text-[11px] leading-relaxed text-slate-500">
-                    The quote shows the starting price, room-based charges, any minimum-price adjustment, optional extras, discounts, and the fixed service fee.
+                    The quote shows the starting price, room and bathroom charges, optional extras, eligible discounts, and the fixed service fee.
                   </p>
                   <div className="flex justify-between text-slate-600 font-semibold border-b border-slate-100 pb-2">
                     <span>Base cleaning price ({quoteSnapshot.serviceName || 'Standard'})</span>
@@ -1173,39 +1134,6 @@ export const CleaningCalculatorPage: React.FC = () => {
                     <div className="flex justify-between text-slate-600">
                       <span>Bathroom charges ({numberOfBathrooms} bathrooms)</span>
                       <span>+{formatNaira(quoteSnapshot.bathroomCharges)}</span>
-                    </div>
-                  )}
-                  {quoteSnapshot.pricePerFloor !== undefined ? (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Floor charges ({numberOfFloors} × {formatNaira(quoteSnapshot.pricePerFloor)} per floor)</span>
-                      <span>+{formatNaira(quoteSnapshot.floorCharges)}</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Floor charges ({numberOfFloors} floors)</span>
-                      <span>+{formatNaira(quoteSnapshot.floorCharges)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t border-slate-100 pt-2 text-slate-700">
-                    <span>Cleaning subtotal before minimum price</span>
-                    <span>{formatNaira(cleaningSubtotalBeforeMinimum)}</span>
-                  </div>
-                  {quoteSnapshot.minimumPrice !== undefined && quoteSnapshot.minimumPrice > 0 && (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Minimum cleaning price</span>
-                      <span>{formatNaira(quoteSnapshot.minimumPrice)}</span>
-                    </div>
-                  )}
-                  {(quoteSnapshot.minimumAdjustment || 0) > 0 && (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Minimum-price adjustment</span>
-                      <span>+{formatNaira(quoteSnapshot.minimumAdjustment || 0)}</span>
-                    </div>
-                  )}
-                  {quoteSnapshot.minimumPrice !== undefined && (
-                    <div className="flex justify-between text-slate-600 font-semibold">
-                      <span>Cleaning subtotal after minimum price</span>
-                      <span>{formatNaira(cleaningSubtotalAfterMinimum)}</span>
                     </div>
                   )}
                   {quoteSnapshot.addons?.length ? quoteSnapshot.addons.map((addon) => {

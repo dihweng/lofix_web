@@ -23,7 +23,7 @@ export interface SavedProperty {
   numberOfLivingRooms?: number | null;
   numberOfRooms?: number;
   numberOfBathrooms: number;
-  numberOfFloors: number;
+  numberOfFloors?: number;
   squareMeters?: number | null;
   accessInstructions?: string;
   createdAt?: string;
@@ -57,7 +57,6 @@ export interface QuoteRequestPayload {
   numberOfLivingRooms?: number;
   numberOfRooms?: number;
   numberOfBathrooms: number;
-  numberOfFloors: number;
   squareMeters?: number | null;
   furnishingState?: FurnishingState;
   suppliesPreference?: SuppliesPreference;

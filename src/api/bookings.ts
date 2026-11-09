@@ -58,12 +58,14 @@ export interface PriceSnapshot {
   basePrice: number;
   pricePerRoom?: number;
   pricePerBathroom?: number;
-  pricePerFloor?: number;
   roomCharges: number;
   bathroomCharges: number;
-  floorCharges: number;
+  /** Legacy-only: existing booking snapshots may contain an old floor charge. */
+  floorCharges?: number;
   sqMeterCharges: number;
+  /** Legacy-only: existing booking snapshots may contain an old minimum price. */
   minimumPrice?: number;
+  /** Legacy-only: existing booking snapshots may contain a minimum-price adjustment. */
   minimumAdjustment?: number;
   furnishingSurcharge?: number;
   suppliesDiscount?: number; // negative integer kobo

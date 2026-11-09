@@ -60,9 +60,7 @@ export interface PricingRule {
   basePrice: number; // in kobo
   pricePerRoom: number; // in kobo
   pricePerBathroom: number; // in kobo
-  pricePerFloor: number; // in kobo
   pricePerSqMeter: number; // in kobo
-  minimumPrice: number; // in kobo
   serviceFee: number; // in kobo
   currency: 'NGN';
   active: boolean;
