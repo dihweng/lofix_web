@@ -1154,24 +1154,39 @@ export const CleaningCalculatorPage: React.FC = () => {
                       <span>+{formatNaira(quoteSnapshot.addonsTotal)}</span>
                     </div>
                   ) : null}
-                  {quoteSnapshot.dishwashingItems?.length ? quoteSnapshot.dishwashingItems.map((item) => {
-                    const unitPrice = item.unitPriceKobo ?? item.unitPrice ?? item.price;
-                    const total = item.total ?? (unitPrice !== undefined ? unitPrice * item.quantity : undefined);
-                    return (
-                      <div key={item.itemId} className="flex justify-between text-slate-600">
-                        <span>
-                          {item.name || item.itemName || 'Dishwashing'}
-                          {unitPrice !== undefined ? ` (${item.quantity} × ${formatNaira(unitPrice)})` : ` (${item.quantity})`}
+                  {((quoteSnapshot.dishwashingItems?.length || 0) > 0 || (quoteSnapshot.dishwashingTotal || 0) > 0) && (
+                    <div
+                      role="group"
+                      aria-label="Dishwashing charges"
+                      className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-600"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-slate-700">Dishwashing</p>
+                          <p className="mt-0.5 text-[10px] text-slate-500">
+                            Listed separately from cleaning and included in your quote total.
+                          </p>
+                        </div>
+                        <span className="shrink-0 font-semibold text-slate-800">
+                          +{formatNaira(quoteSnapshot.dishwashingTotal || 0)}
                         </span>
-                        <span>+{formatNaira(total ?? 0)}</span>
                       </div>
-                    );
-                  }) : (quoteSnapshot.dishwashingTotal || 0) > 0 ? (
-                    <div className="flex justify-between text-slate-600 font-semibold">
-                      <span>Dishwashing</span>
-                      <span>+{formatNaira(quoteSnapshot.dishwashingTotal || 0)}</span>
+                      {!!quoteSnapshot.dishwashingItems?.length && (
+                        <div className="space-y-1.5 border-t border-slate-200 pt-2">
+                          {quoteSnapshot.dishwashingItems.map((item) => {
+                            return (
+                              <div key={item.itemId} className="flex justify-between gap-3 text-[11px]">
+                                <span>{item.name || item.itemName || 'Dishwashing'}</span>
+                                <span className="shrink-0">
+                                  {item.quantity} {item.unit?.toLowerCase() || 'items'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  ) : null}
+                  )}
                   {(quoteSnapshot.furnishingSurcharge || 0) !== 0 && (
                     <div className="flex justify-between text-slate-600">
                       <span>Furnishing adjustment</span>

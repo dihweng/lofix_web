@@ -189,7 +189,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       addonsTotal: 0,
       dishwashingTotal: 100000, // 2 x ₦500 = ₦1,000 = 100000 kobo
       dishwashingItems: [
-        { itemId: 101, itemName: 'Glass Cups', unit: 'PIECE', quantity: 2, total: 100000 },
+        { itemId: 101, itemName: 'Glass Cups', unit: 'PIECE', quantity: 2, unitPriceKobo: 50000, total: 100000 },
       ],
       furnishingSurcharge: 0,
       suppliesDiscount: 0,
@@ -228,6 +228,12 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
         })
       );
     });
+    const dishwashingCard = await screen.findByRole('group', { name: 'Dishwashing charges' });
+    expect(dishwashingCard).toHaveClass('bg-slate-50');
+    expect(dishwashingCard).toHaveTextContent('Listed separately from cleaning and included in your quote total.');
+    expect(dishwashingCard).toHaveTextContent('Glass Cups');
+    expect(dishwashingCard).toHaveTextContent('2 piece');
+    expect(dishwashingCard).toHaveTextContent('+₦1,000.00');
 
     const bookButton = screen.getByRole('button', { name: /book & proceed to checkout/i });
     fireEvent.click(bookButton);
