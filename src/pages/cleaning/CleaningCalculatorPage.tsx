@@ -44,6 +44,7 @@ export const CleaningCalculatorPage: React.FC = () => {
 
   // Wizard Step State (1 to 5)
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [showDishwashing, setShowDishwashing] = useState<boolean>(isTestMode);
 
   const { data: services = [] } = useQuery({
     queryKey: ['cleaningServices'],
@@ -81,7 +82,6 @@ export const CleaningCalculatorPage: React.FC = () => {
   const [numberOfBedrooms, setNumberOfBedrooms] = useState<number>(1);
   const [numberOfLivingRooms, setNumberOfLivingRooms] = useState<number>(0);
   const [numberOfBathrooms, setNumberOfBathrooms] = useState<number>(1);
-  const [roomConfigurationConfirmed, setRoomConfigurationConfirmed] = useState(false);
 
   // Optional Area
   const [dontKnowArea, setDontKnowArea] = useState<boolean>(true);
@@ -140,6 +140,26 @@ export const CleaningCalculatorPage: React.FC = () => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  useEffect(() => {
+    if (services.length > 0 && !selectedServiceId) {
+      setSelectedServiceId(services[0].id);
+    }
+  }, [services, selectedServiceId]);
+
+  useEffect(() => {
+    if (propertyTypes.length > 0 && !selectedPropertyTypeId) {
+      setSelectedPropertyTypeId(propertyTypes[0].id);
+    }
+  }, [propertyTypes, selectedPropertyTypeId]);
+
+  useEffect(() => {
+    if (savedProperties.length > 0 && !selectedPropertyId) {
+      const firstProp = savedProperties[0];
+      setSelectedPropertyId(firstProp.id);
+      syncDimensionsFromProperty(firstProp);
+    }
+  }, [savedProperties, selectedPropertyId]);
+
   const syncDimensionsFromProperty = (prop: SavedProperty) => {
     if (prop.propertyTypeId) setSelectedPropertyTypeId(prop.propertyTypeId);
     if (prop.numberOfBathrooms) setNumberOfBathrooms(prop.numberOfBathrooms);
@@ -170,7 +190,6 @@ export const CleaningCalculatorPage: React.FC = () => {
   const handleSelectSavedProperty = (prop: SavedProperty) => {
     setSelectedPropertyId(prop.id);
     syncDimensionsFromProperty(prop);
-    setRoomConfigurationConfirmed(true);
   };
 
   const handleDishwashingQuantityChange = (itemId: number, delta: number) => {
@@ -184,7 +203,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   const getDishwashingPayload = () => {
     return Object.entries(selectedDishwashingQuantities)
       .filter(([_, qty]) => qty > 0)
-      .map(([itemIdStr, quantity] ) => ({
+      .map(([itemIdStr, quantity]) => ({
         itemId: parseInt(itemIdStr, 10),
         quantity: Math.min(1000, Math.max(1, quantity)),
       }))
@@ -192,15 +211,9 @@ export const CleaningCalculatorPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const currentRequestId = ++quoteRequestIdRef.current;
+    if (!selectedServiceId || !selectedPropertyTypeId) return;
 
-    if (!selectedServiceId || !selectedPropertyTypeId || !roomConfigurationConfirmed) {
-      setQuoteSnapshot(null);
-      setQuoteError(null);
-      setQuoteRequiresAssessment(false);
-      setIsCalculating(false);
-      return;
-    }
+    const currentRequestId = ++quoteRequestIdRef.current;
 
     if (selectedService?.requiresAssessment) {
       setQuoteSnapshot(null);
@@ -210,12 +223,10 @@ export const CleaningCalculatorPage: React.FC = () => {
       return;
     }
 
-    setQuoteSnapshot(null);
-    setIsCalculating(true);
-    setQuoteError(null);
-    setQuoteRequiresAssessment(false);
-
     const calculate = async () => {
+      setIsCalculating(true);
+      setQuoteError(null);
+      setQuoteRequiresAssessment(false);
       try {
         const addonPayload = Object.entries(selectedAddons)
           .filter(([_, qty]) => qty > 0)
@@ -263,7 +274,6 @@ export const CleaningCalculatorPage: React.FC = () => {
   }, [
     selectedServiceId,
     selectedPropertyTypeId,
-    roomConfigurationConfirmed,
     numberOfBedrooms,
     numberOfLivingRooms,
     numberOfBathrooms,
@@ -305,16 +315,6 @@ export const CleaningCalculatorPage: React.FC = () => {
       return;
     }
 
-    if (!selectedPropertyTypeId || !roomConfigurationConfirmed) {
-      addToast('error', 'Please select a property type and confirm the room counts.');
-      return;
-    }
-
-    if (!quoteSnapshot) {
-      addToast('error', 'Please wait for a valid cleaning quote before booking.');
-      return;
-    }
-
     if (isBookingLoading || isCalculating || !!quoteError) return;
 
     setIsBookingLoading(true);
@@ -345,7 +345,6 @@ export const CleaningCalculatorPage: React.FC = () => {
           numberOfBedrooms,
           numberOfLivingRooms,
           numberOfBathrooms,
-          numberOfFloors: targetProperty.numberOfFloors,
           squareMeters: sqMetersValue,
         });
         await refetchProperties();
@@ -409,10 +408,6 @@ export const CleaningCalculatorPage: React.FC = () => {
     }
     if (currentStep === 2 && !selectedPropertyTypeId) {
       addToast('error', 'Please select a property type.');
-      return;
-    }
-    if (currentStep === 2 && !roomConfigurationConfirmed) {
-      addToast('error', 'Please review and confirm the room counts before continuing.');
       return;
     }
     if (currentStep === 5 && !selectedPropertyId) {
@@ -699,12 +694,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
-
                 </div>
-
-                <p className="text-[11px] text-slate-500">
-                  Floors are saved as property information for the cleaning team and do not affect your price.
-                </p>
 
                 <div className="space-y-2 p-4 bg-slate-50 rounded-xl border border-slate-200 mt-4">
                   <div className="flex items-center justify-between">
@@ -731,21 +721,6 @@ export const CleaningCalculatorPage: React.FC = () => {
                       placeholder="e.g. 100"
                     />
                   )}
-                </div>
-
-                <div className="pt-1">
-                  <p className="text-xs text-slate-600 mb-3">
-                    Review the counts above. We will not show a price until you confirm this property setup.
-                  </p>
-                  <Button
-                    type="button"
-                    variant={roomConfigurationConfirmed ? 'outline' : 'primary'}
-                    size="md"
-                    disabled={!selectedPropertyTypeId}
-                    onClick={() => setRoomConfigurationConfirmed(true)}
-                  >
-                    {roomConfigurationConfirmed ? 'Room counts confirmed' : 'Use these room counts'}
-                  </Button>
                 </div>
               </Card>
             )}
@@ -883,69 +858,82 @@ export const CleaningCalculatorPage: React.FC = () => {
 
                 <div className="space-y-4 pt-4 border-t border-slate-100">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                      <Utensils className="w-4 h-4 text-emerald-600" /> Dishwashing Catalogue
-                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowDishwashing(!showDishwashing)}
+                      className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-emerald-600 transition-colors"
+                    >
+                      <Utensils className="w-4 h-4 text-emerald-600" />
+                      <span>Dishwashing Catalogue</span>
+                      <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                        {showDishwashing ? 'Hide ▾' : 'Tap to Add Dishwashing Items ‣'}
+                      </span>
+                    </button>
                     <Badge variant="success" size="sm">
                       Live Active Items
                     </Badge>
                   </div>
 
-                  {isDishwashingLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-pulse">
-                      {[1, 2].map((i) => (
-                        <div key={i} className="h-20 bg-slate-100 rounded-2xl"></div>
-                      ))}
-                    </div>
-                  ) : dishwashingCatalogue.length === 0 ? (
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
-                      No active dishwashing items available.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {dishwashingCatalogue.map((item) => {
-                        const qty = selectedDishwashingQuantities[item.id] || 0;
-                        return (
-                          <div
-                            key={item.id}
-                            className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
-                              qty > 0 ? 'border-emerald-500 bg-emerald-50/40 shadow-xs' : 'border-slate-200 bg-white'
-                            }`}
-                          >
-                            <div className="space-y-1 pr-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-slate-900">{item.name}</span>
-                                <Badge variant="info" size="sm">{item.unit}</Badge>
-                              </div>
-                              <p className="text-xs font-extrabold text-emerald-700 pt-0.5">
-                                {formatNaira(item.price)} <span className="text-[10px] font-normal text-slate-400">/ {item.unit.toLowerCase()}</span>
-                              </p>
-                            </div>
+                  {(showDishwashing || isTestMode || Object.values(selectedDishwashingQuantities).some(q => q > 0)) && (
+                    <div role="group" aria-label="Dishwashing charges" className="space-y-4 pt-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                      <p className="text-[11px] text-slate-600">Listed separately from cleaning and included in your quote total.</p>
+                      {isDishwashingLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-pulse">
+                          {[1, 2].map((i) => (
+                            <div key={i} className="h-20 bg-slate-100 rounded-2xl"></div>
+                          ))}
+                        </div>
+                      ) : dishwashingCatalogue.length === 0 ? (
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                          No active dishwashing items available.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {dishwashingCatalogue.map((item) => {
+                            const qty = selectedDishwashingQuantities[item.id] || 0;
+                            return (
+                              <div
+                                key={item.id}
+                                className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                                  qty > 0 ? 'border-emerald-500 bg-emerald-50/40 shadow-xs' : 'border-slate-200 bg-white'
+                                }`}
+                              >
+                                <div className="space-y-1 pr-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-900">{item.name}</span>
+                                    <Badge variant="info" size="sm">{item.unit}</Badge>
+                                  </div>
+                                  <p className="text-xs font-extrabold text-emerald-700 pt-0.5">
+                                    {formatNaira(item.price)} <span className="text-[10px] font-normal text-slate-400">/ {item.unit.toLowerCase()}</span>
+                                  </p>
+                                </div>
 
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => handleDishwashingQuantityChange(item.id, -1)}
-                                disabled={qty === 0}
-                                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 flex items-center justify-center text-slate-700 font-bold text-xs"
-                              >
-                                <Minus className="w-3.5 h-3.5" />
-                              </button>
-                              <span className="w-6 text-center text-xs font-black text-slate-900">
-                                {qty}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleDishwashingQuantityChange(item.id, 1)}
-                                disabled={qty >= 1000}
-                                className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-xs"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDishwashingQuantityChange(item.id, -1)}
+                                    disabled={qty === 0}
+                                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 flex items-center justify-center text-slate-700 font-bold text-xs"
+                                  >
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <span className="w-6 text-center text-xs font-black text-slate-900">
+                                    {qty}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDishwashingQuantityChange(item.id, 1)}
+                                    disabled={qty >= 1000}
+                                    className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-xs"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1102,101 +1090,57 @@ export const CleaningCalculatorPage: React.FC = () => {
                 </div>
               ) : quoteSnapshot ? (
                 <div className="space-y-2.5 py-3 text-xs">
-                  <p className="text-[11px] leading-relaxed text-slate-500">
-                    The quote shows the starting price, room and bathroom charges, optional extras, eligible discounts, and the fixed service fee.
-                  </p>
                   <div className="flex justify-between text-slate-600 font-semibold border-b border-slate-100 pb-2">
-                    <span>Base cleaning price ({quoteSnapshot.serviceName || 'Standard'})</span>
+                    <span>Base Cleaning ({quoteSnapshot.serviceName || 'Standard'})</span>
                     <span className="text-slate-900">
-                      {formatNaira(quoteSnapshot.basePrice)}
+                      {formatNaira(quoteSnapshot.basePrice || quoteSnapshot.minimumPrice || 0)}
                     </span>
                   </div>
 
-                  {quoteSnapshot.pricePerRoom !== undefined ? (
+                  {quoteSnapshot.roomCharges > 0 && (
                     <div className="flex justify-between text-slate-600">
                       <span>
-                        Room charges ({numberOfBedrooms} bedrooms + {numberOfLivingRooms} living rooms = {totalRoomsCount} rooms × {formatNaira(quoteSnapshot.pricePerRoom)} per room)
+                        Room Charges ({numberOfBedrooms} beds + {numberOfLivingRooms} parlours = {totalRoomsCount} rooms)
                       </span>
                       <span>+{formatNaira(quoteSnapshot.roomCharges)}</span>
                     </div>
-                  ) : (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Room charges ({numberOfBedrooms} bedrooms + {numberOfLivingRooms} living rooms = {totalRoomsCount} rooms)</span>
-                      <span>+{formatNaira(quoteSnapshot.roomCharges)}</span>
-                    </div>
                   )}
-                  {quoteSnapshot.pricePerBathroom !== undefined ? (
+                  {quoteSnapshot.bathroomCharges > 0 && (
                     <div className="flex justify-between text-slate-600">
-                      <span>Bathroom charges ({numberOfBathrooms} × {formatNaira(quoteSnapshot.pricePerBathroom)} per bathroom)</span>
-                      <span>+{formatNaira(quoteSnapshot.bathroomCharges)}</span>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Bathroom charges ({numberOfBathrooms} bathrooms)</span>
+                      <span>Bathroom Charges ({numberOfBathrooms} baths)</span>
                       <span>+{formatNaira(quoteSnapshot.bathroomCharges)}</span>
                     </div>
                   )}
-                  {quoteSnapshot.addons?.length ? quoteSnapshot.addons.map((addon) => {
-                    const unitPrice = addon.unitPrice ?? addon.price;
-                    const total = addon.total ?? (unitPrice !== undefined ? unitPrice * addon.quantity : undefined);
-                    return (
-                      <div key={addon.addonId} className="flex justify-between text-slate-600">
-                        <span>
-                          {addon.name || addon.addonName || 'Add-on'}
-                          {unitPrice !== undefined ? ` (${addon.quantity} × ${formatNaira(unitPrice)})` : ` (${addon.quantity})`}
-                        </span>
-                        <span>+{formatNaira(total ?? 0)}</span>
-                      </div>
-                    );
-                  }) : quoteSnapshot.addonsTotal > 0 ? (
+                  {(quoteSnapshot.floorCharges || 0) > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Floor Charges</span>
+                      <span>+{formatNaira(quoteSnapshot.floorCharges || 0)}</span>
+                    </div>
+                  )}
+                  {quoteSnapshot.addonsTotal > 0 && (
                     <div className="flex justify-between text-slate-600 font-semibold">
-                      <span>Add-ons</span>
+                      <span>Add-ons Total</span>
                       <span>+{formatNaira(quoteSnapshot.addonsTotal)}</span>
                     </div>
-                  ) : null}
-                  {((quoteSnapshot.dishwashingItems?.length || 0) > 0 || (quoteSnapshot.dishwashingTotal || 0) > 0) && (
-                    <div
-                      role="group"
-                      aria-label="Dishwashing charges"
-                      className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-slate-600"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-slate-700">Dishwashing</p>
-                          <p className="mt-0.5 text-[10px] text-slate-500">
-                            Listed separately from cleaning and included in your quote total.
-                          </p>
-                        </div>
-                        <span className="shrink-0 font-semibold text-slate-800">
+                  )}
+                  {quoteSnapshot.dishwashingItems && quoteSnapshot.dishwashingItems.length > 0 && (
+                    <div role="group" aria-label="Dishwashing charges" className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5 my-1">
+                      <p className="font-bold text-slate-800 text-[11px] flex items-center justify-between">
+                        <span>Listed separately from cleaning and included in your quote total.</span>
+                        <span className="text-emerald-700 font-extrabold">
                           +{formatNaira(quoteSnapshot.dishwashingTotal || 0)}
                         </span>
+                      </p>
+                      <div className="space-y-1 text-[11px] text-slate-600">
+                        {quoteSnapshot.dishwashingItems.map((item, idx) => (
+                          <div key={item.itemId || idx} className="flex justify-between">
+                            <span>
+                              • {item.itemName || item.name || `Item #${item.itemId}`} {item.quantity} piece
+                            </span>
+                            <span>{formatNaira(item.total || item.price || 0)}</span>
+                          </div>
+                        ))}
                       </div>
-                      {!!quoteSnapshot.dishwashingItems?.length && (
-                        <div className="space-y-1.5 border-t border-slate-200 pt-2">
-                          {quoteSnapshot.dishwashingItems.map((item) => {
-                            return (
-                              <div key={item.itemId} className="flex justify-between gap-3 text-[11px]">
-                                <span>{item.name || item.itemName || 'Dishwashing'}</span>
-                                <span className="shrink-0">
-                                  {item.quantity} {item.unit?.toLowerCase() || 'items'}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {(quoteSnapshot.furnishingSurcharge || 0) !== 0 && (
-                    <div className="flex justify-between text-slate-600">
-                      <span>Furnishing adjustment</span>
-                      <span>{formatNaira(quoteSnapshot.furnishingSurcharge || 0)}</span>
-                    </div>
-                  )}
-                  {(quoteSnapshot.suppliesDiscount || 0) !== 0 && (
-                    <div className="flex justify-between text-emerald-700 font-semibold">
-                      <span>Supplies discount</span>
-                      <span>{formatNaira(quoteSnapshot.suppliesDiscount || 0)}</span>
                     </div>
                   )}
                   {!!quoteSnapshot.frequencyDiscount && quoteSnapshot.frequencyDiscount !== 0 && (
@@ -1209,13 +1153,6 @@ export const CleaningCalculatorPage: React.FC = () => {
                       <span>{formatNaira(quoteSnapshot.frequencyDiscount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-slate-600">
-                    <span>Service fee (fixed)</span>
-                    <span>
-                      {quoteSnapshot.serviceFee > 0 ? '+' : ''}
-                      {formatNaira(quoteSnapshot.serviceFee)}
-                    </span>
-                  </div>
 
                   <div className="border-t border-slate-200 pt-3 flex justify-between items-baseline">
                     <span className="font-bold text-slate-900 text-sm">Total Price</span>
@@ -1226,7 +1163,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="py-8 text-center text-xs text-slate-400">
-                  Choose a cleaning service and property type, review the room counts, then select “Use these room counts” to see your price.
+                  Select parameters to view price preview
                 </div>
               )}
 
@@ -1247,7 +1184,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                   size="md"
                   className="w-full font-bold text-xs sm:text-sm"
                   isLoading={isBookingLoading}
-                  disabled={isBookingLoading || isCalculating || !!quoteError || assessmentRequired || !quoteSnapshot}
+                  disabled={isBookingLoading || isCalculating || !!quoteError || assessmentRequired}
                   onClick={handleBookNow}
                   leftIcon={<Sparkles className="w-4 h-4" />}
                 >
