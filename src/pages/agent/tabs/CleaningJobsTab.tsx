@@ -15,6 +15,8 @@ import {
   Calendar,
   AlertCircle,
   Power,
+  Phone,
+  MessageSquare,
 } from 'lucide-react';
 
 export const CleaningJobsTab: React.FC = () => {
@@ -243,6 +245,19 @@ export const CleaningJobsTab: React.FC = () => {
                     <p className="text-xs text-slate-600 bg-amber-50 p-2.5 rounded border border-amber-200 italic">
                       Customer Note: "{b.customerNote}"
                     </p>
+                  )}
+
+                  {(b?.arrivalInstructions || b?.accessLandmark || b?.contactPhoneNumber) && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs space-y-2">
+                      <p className="font-bold text-amber-950">Arrival & contact details</p>
+                      {b.arrivalInstructions && <p className="text-amber-900">{b.arrivalInstructions}</p>}
+                      {b.accessLandmark && <p className="text-amber-900"><strong>Landmark:</strong> {b.accessLandmark}</p>}
+                      {b.contactPhoneNumber && <div className="flex flex-wrap gap-2 pt-1">
+                        <a className="inline-flex items-center gap-1 rounded bg-emerald-600 text-white px-3 py-2 font-bold" href={`tel:+${b.contactPhoneNumber.replace(/^\+/, '')}`}><Phone className="w-3.5 h-3.5" />Call customer</a>
+                        <a className="inline-flex items-center gap-1 rounded bg-sky-600 text-white px-3 py-2 font-bold" href={`sms:+${b.contactPhoneNumber.replace(/^\+/, '')}`}><MessageSquare className="w-3.5 h-3.5" />Send SMS</a>
+                        <span className="self-center text-slate-600">Preferred: {b.contactPreference === 'SMS' ? 'SMS' : 'Call'}</span>
+                      </div>}
+                    </div>
                   )}
 
                   {/* Ordered Job Action Workflow Buttons */}

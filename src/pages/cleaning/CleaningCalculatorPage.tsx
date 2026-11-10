@@ -11,6 +11,7 @@ import { CustomerLayout } from '../../components/layout/CustomerLayout';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
+import { Select } from '../../components/common/Select';
 import { Badge } from '../../components/common/Badge';
 import { ToastMessage } from '../../components/common/Toast';
 import { PropertyManagerModal } from '../../components/cleaning/PropertyManagerModal';
@@ -38,7 +39,7 @@ import {
 
 export const CleaningCalculatorPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const isTestMode = import.meta.env.MODE === 'test';
 
@@ -105,6 +106,14 @@ export const CleaningCalculatorPage: React.FC = () => {
     return d.toISOString().slice(0, 16);
   });
   const [customerNote, setCustomerNote] = useState<string>('');
+  const [arrivalInstructions, setArrivalInstructions] = useState<string>('');
+  const [accessLandmark, setAccessLandmark] = useState<string>('');
+  const [contactPreference, setContactPreference] = useState<'CALL' | 'SMS'>('CALL');
+  const [contactPhoneNumber, setContactPhoneNumber] = useState<string>('');
+
+  useEffect(() => {
+    if (!contactPhoneNumber && user?.phoneNumber) setContactPhoneNumber(user.phoneNumber);
+  }, [user?.phoneNumber]);
 
   const [quoteSnapshot, setQuoteSnapshot] = useState<PriceSnapshot | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -190,6 +199,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   const handleSelectSavedProperty = (prop: SavedProperty) => {
     setSelectedPropertyId(prop.id);
     syncDimensionsFromProperty(prop);
+    if (!arrivalInstructions && prop.accessInstructions) setArrivalInstructions(prop.accessInstructions);
   };
 
   const handleDishwashingQuantityChange = (itemId: number, delta: number) => {
@@ -363,6 +373,10 @@ export const CleaningCalculatorPage: React.FC = () => {
         suppliesPreference,
         ...(frequencyPromotionsEnabled ? { frequency: selectedFrequency } : {}),
         customerNote: customerNote.trim(),
+        arrivalInstructions: arrivalInstructions.trim(),
+        accessLandmark: accessLandmark.trim(),
+        contactPreference,
+        contactPhoneNumber: contactPhoneNumber.trim(),
         addons: addonPayload,
         dishwashingItems: dishwashingPayload,
       });
@@ -1020,10 +1034,36 @@ export const CleaningCalculatorPage: React.FC = () => {
                     onChange={(e) => setScheduledAt(e.target.value)}
                   />
                   <Input
-                    label="Cleaning Agent Instructions / Notes"
-                    placeholder="e.g. Key is with security guard..."
+                    label="General Cleaning Notes"
+                    placeholder="e.g. Please focus on the kitchen..."
                     value={customerNote}
                     onChange={(e) => setCustomerNote(e.target.value)}
+                  />
+                  <Input
+                    label="Arrival Instructions"
+                    placeholder="e.g. Call at the gate; ask security for Block B"
+                    value={arrivalInstructions}
+                    onChange={(e) => setArrivalInstructions(e.target.value)}
+                  />
+                  <Input
+                    label="Landmark / Gate Directions"
+                    placeholder="e.g. Blue gate opposite the pharmacy"
+                    value={accessLandmark}
+                    onChange={(e) => setAccessLandmark(e.target.value)}
+                  />
+                  <Select
+                    label="Preferred Contact Method"
+                    value={contactPreference}
+                    onChange={(e) => setContactPreference(e.target.value as 'CALL' | 'SMS')}
+                    options={[{ value: 'CALL', label: 'Phone call' }, { value: 'SMS', label: 'SMS message' }]}
+                  />
+                  <Input
+                    label="Arrival Contact Number"
+                    type="tel"
+                    placeholder="08012345678"
+                    value={contactPhoneNumber}
+                    onChange={(e) => setContactPhoneNumber(e.target.value)}
+                    helperText="Visible only to an assigned Agent after they accept the job."
                   />
                 </div>
               </Card>

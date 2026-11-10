@@ -7,6 +7,7 @@ import {
   FurnishingState,
   SuppliesPreference,
   CleaningFrequency,
+  ContactPreference,
 } from './bookings';
 import { CleaningService, PropertyType, Addon } from './configuration';
 
@@ -73,8 +74,19 @@ export interface CreateCleaningBookingPayload {
   suppliesPreference?: SuppliesPreference;
   frequency?: CleaningFrequency;
   customerNote?: string;
+  arrivalInstructions?: string;
+  accessLandmark?: string;
+  contactPreference?: ContactPreference;
+  contactPhoneNumber?: string;
   addons?: Array<{ addonId: number; quantity: number }>;
   dishwashingItems?: Array<{ itemId: number; quantity: number }>;
+}
+
+export interface ArrivalDetailsPayload {
+  arrivalInstructions?: string;
+  accessLandmark?: string;
+  contactPreference?: ContactPreference;
+  contactPhoneNumber?: string;
 }
 
 export interface ReviewSubmissionPayload {
@@ -174,6 +186,11 @@ export const cleaningCustomerApi = {
 
   getBookingDetail: async (bookingId: number): Promise<CleaningBooking> => {
     const res = await apiClient.get<CleaningBooking>(`/cleaning/bookings/${bookingId}`);
+    return res.data;
+  },
+
+  updateArrivalDetails: async (bookingId: number, payload: ArrivalDetailsPayload): Promise<CleaningBooking> => {
+    const res = await apiClient.patch<CleaningBooking>(`/cleaning/bookings/${bookingId}/arrival-details`, payload);
     return res.data;
   },
 

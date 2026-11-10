@@ -13,6 +13,7 @@ export type BookingStatus =
 export type FurnishingState = 'OCCUPIED' | 'MOVE_IN_OUT' | 'POST_CONSTRUCTION';
 export type SuppliesPreference = 'SUPPLIES_INCLUDED' | 'CUSTOMER_PROVIDED';
 export type CleaningFrequency = 'ONE_TIME' | 'WEEKLY' | 'BI_WEEKLY' | 'MONTHLY';
+export type ContactPreference = 'CALL' | 'SMS';
 
 export interface PropertySnapshot {
   id: number;
@@ -113,6 +114,10 @@ export interface CleaningBooking {
   propertySnapshot: PropertySnapshot;
   priceSnapshot: PriceSnapshot;
   customerNote?: string;
+  arrivalInstructions?: string;
+  accessLandmark?: string;
+  contactPreference?: ContactPreference;
+  contactPhoneNumber?: string;
   assignments?: CleaningAssignment[];
   createdAt?: string;
   updatedAt?: string;

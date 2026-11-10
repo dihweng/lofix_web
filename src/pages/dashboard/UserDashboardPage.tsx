@@ -18,6 +18,7 @@ import { authApi } from '../../api/auth';
 import { CleaningBooking } from '../../api/bookings';
 import { LiveJobTrackingModal } from '../../components/cleaning/LiveJobTrackingModal';
 import { ReviewModal } from '../../components/cleaning/ReviewModal';
+import { ArrivalDetailsModal } from '../../components/cleaning/ArrivalDetailsModal';
 import { PaymentModal } from '../../components/payment/PaymentModal';
 import { RescheduleCancelModal } from '../../components/cleaning/RescheduleCancelModal';
 import { SupportTicketModal } from '../../components/support/SupportTicketModal';
@@ -128,6 +129,7 @@ export const UserDashboardPage: React.FC = () => {
   const [trackingBooking, setTrackingBooking] = useState<CleaningBooking | null>(null);
   const [reviewBooking, setReviewBooking] = useState<CleaningBooking | null>(null);
   const [cancellationBooking, setCancellationBooking] = useState<CleaningBooking | null>(null);
+  const [arrivalBooking, setArrivalBooking] = useState<CleaningBooking | null>(null);
   const [supportModalOrder, setSupportModalOrder] = useState<any | null>(null);
 
   const [title, setTitle] = useState(user?.title || 'Mr');
@@ -714,6 +716,7 @@ export const UserDashboardPage: React.FC = () => {
                             <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                             <span className="line-clamp-1">{b.propertySnapshot?.addressLine1 || 'Address on file'}</span>
                           </p>
+                          {(b.arrivalInstructions || b.accessLandmark) && <p className="text-amber-800 bg-amber-50 border border-amber-100 rounded p-2">Arrival: {b.arrivalInstructions || b.accessLandmark}</p>}
                           <p className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                             <span>{b.scheduledAt ? formatDate(b.scheduledAt) : 'Not scheduled'}</span>
@@ -726,6 +729,7 @@ export const UserDashboardPage: React.FC = () => {
                           </span>
 
                           <div className="flex items-center gap-2">
+                            {!isCompleted && b.status !== 'CANCELLED' && <Button type="button" variant="outline" size="sm" className="font-bold text-xs" onClick={() => setArrivalBooking(b)} leftIcon={<MessageSquare className="w-3.5 h-3.5" />}>Arrival details</Button>}
                             {isCompleted && (
                               <Button
                                 type="button"
@@ -1506,6 +1510,12 @@ export const UserDashboardPage: React.FC = () => {
           refetchCleaning();
           addToast('success', 'Thank you for submitting your review!');
         }}
+      />
+
+      <ArrivalDetailsModal
+        booking={arrivalBooking}
+        onClose={() => setArrivalBooking(null)}
+        onSuccess={() => { refetchCleaning(); addToast('success', 'Arrival instructions updated.'); }}
       />
 
       <PaymentModal

@@ -29,6 +29,10 @@ export interface AgentJob {
     status: string;
     propertySnapshot: PropertySnapshot;
     customerNote?: string;
+    arrivalInstructions?: string;
+    accessLandmark?: string;
+    contactPreference?: 'CALL' | 'SMS';
+    contactPhoneNumber?: string;
   };
 }
 
