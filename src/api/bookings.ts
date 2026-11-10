@@ -118,6 +118,7 @@ export interface CleaningBooking {
   accessLandmark?: string;
   contactPreference?: ContactPreference;
   contactPhoneNumber?: string;
+  hasReview?: boolean;
   assignments?: CleaningAssignment[];
   createdAt?: string;
   updatedAt?: string;

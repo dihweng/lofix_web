@@ -730,7 +730,12 @@ export const UserDashboardPage: React.FC = () => {
 
                           <div className="flex items-center gap-2">
                             {!isCompleted && b.status !== 'CANCELLED' && <Button type="button" variant="outline" size="sm" className="font-bold text-xs" onClick={() => setArrivalBooking(b)} leftIcon={<MessageSquare className="w-3.5 h-3.5" />}>Arrival details</Button>}
-                            {isCompleted && (
+                            {isCompleted && b.hasReview && (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Reviewed
+                              </span>
+                            )}
+                            {isCompleted && !b.hasReview && (
                               <Button
                                 type="button"
                                 variant="outline"

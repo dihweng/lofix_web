@@ -141,4 +141,15 @@ describe('pending cleaning bookings in My Bookings', () => {
     expect(await screen.findByRole('button', { name: 'Complete Payment' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Track Live' })).not.toBeInTheDocument();
   });
+
+  it('shows review state per completed booking and does not offer a duplicate review', async () => {
+    mocks.getCleaningBookings.mockResolvedValue([
+      { ...pendingBooking, id: 18, status: 'COMPLETED', hasReview: true },
+      { ...pendingBooking, id: 19, status: 'COMPLETED', hasReview: false },
+    ]);
+    renderDashboard();
+
+    expect(await screen.findByText('Reviewed')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Leave Review' })).toHaveLength(1);
+  });
 });
