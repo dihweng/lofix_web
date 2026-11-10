@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { agentCleaningApi, AgentJob, AssignmentStatus } from '../../../api/agentCleaning';
+import { agentCleaningApi, AgentJob } from '../../../api/agentCleaning';
 import { formatDate } from '../../../utils/formatters';
 import { Card } from '../../../components/common/Card';
 import { Button } from '../../../components/common/Button';
@@ -11,10 +11,7 @@ import {
   Wrench,
   CheckCircle2,
   XCircle,
-  Clock,
   MapPin,
-  Navigation,
-  Play,
   Calendar,
   AlertCircle,
   Power,
@@ -27,7 +24,7 @@ export const CleaningJobsTab: React.FC = () => {
   // Modal State for Action Transitions
   const [targetJob, setTargetAgentJob] = useState<AgentJob | null>(null);
   const [pendingAction, setPendingAction] = useState<
-    'accept' | 'reject' | 'en-route' | 'arrived' | 'start' | 'complete' | null
+    'accept' | 'reject' | 'arrived' | 'complete' | null
   >(null);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -73,12 +70,8 @@ export const CleaningJobsTab: React.FC = () => {
           return agentCleaningApi.acceptJob(bookingId, payload);
         case 'reject':
           return agentCleaningApi.rejectJob(bookingId, payload);
-        case 'en-route':
-          return agentCleaningApi.enRouteJob(bookingId, payload);
         case 'arrived':
           return agentCleaningApi.arrivedJob(bookingId, payload);
-        case 'start':
-          return agentCleaningApi.startJob(bookingId, payload);
         case 'complete':
           return agentCleaningApi.completeJob(bookingId, payload);
       }
@@ -282,22 +275,7 @@ export const CleaningJobsTab: React.FC = () => {
                       </>
                     )}
 
-                    {job.status === 'ACCEPTED' && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => {
-                          setTargetAgentJob(job);
-                          setPendingAction('en-route');
-                        }}
-                        leftIcon={<Navigation className="w-4 h-4" />}
-                        className="bg-purple-600 hover:bg-purple-700"
-                      >
-                        En-Route
-                      </Button>
-                    )}
-
-                    {job.status === 'EN_ROUTE' && (
+                    {(job.status === 'ACCEPTED' || job.status === 'EN_ROUTE') && (
                       <Button
                         variant="primary"
                         size="sm"
@@ -312,22 +290,7 @@ export const CleaningJobsTab: React.FC = () => {
                       </Button>
                     )}
 
-                    {job.status === 'ARRIVED' && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => {
-                          setTargetAgentJob(job);
-                          setPendingAction('start');
-                        }}
-                        leftIcon={<Play className="w-4 h-4" />}
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        Start Job
-                      </Button>
-                    )}
-
-                    {job.status === 'STARTED' && (
+                    {(job.status === 'ARRIVED' || job.status === 'STARTED') && (
                       <Button
                         variant="primary"
                         size="sm"

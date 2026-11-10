@@ -66,18 +66,8 @@ export const agentCleaningApi = {
     return res.data;
   },
 
-  enRouteJob: async (bookingId: number, payload?: JobActionPayload): Promise<AgentJob> => {
-    const res = await apiClient.post<AgentJob>(`/cleaning/agent/jobs/${bookingId}/en-route`, payload || {});
-    return res.data;
-  },
-
   arrivedJob: async (bookingId: number, payload?: JobActionPayload): Promise<AgentJob> => {
     const res = await apiClient.post<AgentJob>(`/cleaning/agent/jobs/${bookingId}/arrived`, payload || {});
-    return res.data;
-  },
-
-  startJob: async (bookingId: number, payload?: JobActionPayload): Promise<AgentJob> => {
-    const res = await apiClient.post<AgentJob>(`/cleaning/agent/jobs/${bookingId}/start`, payload || {});
     return res.data;
   },
 
