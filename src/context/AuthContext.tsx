@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Account,
   AuthResponse,
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TOKEN_KEY = 'lofix_customer_jwt';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<Account | null>(() => readSession(TOKEN_KEY));
   const [jwtToken, setJwtToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -58,7 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setUser(null);
     setToken(null);
-  }, [jwtToken, setToken]);
+    navigate('/', { replace: true });
+  }, [jwtToken, setToken, navigate]);
 
   useEffect(() => {
     configureAxiosAuth(

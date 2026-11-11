@@ -1,4 +1,5 @@
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
@@ -12,7 +13,7 @@ function Status() {
   const { user, isLoading } = useAuth();
   return <div>{isLoading ? 'Loading' : user?.firstName || 'Guest'}</div>;
 }
-const mount = () => render(<React.StrictMode><AuthProvider><Status /></AuthProvider></React.StrictMode>);
+const mount = () => render(<React.StrictMode><MemoryRouter><AuthProvider><Status /></AuthProvider></MemoryRouter></React.StrictMode>);
 beforeEach(() => { localStorage.clear(); vi.clearAllMocks(); });
 afterEach(cleanup);
 
