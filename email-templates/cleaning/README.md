@@ -12,4 +12,4 @@ For pending payment, use `paymentMessage`: “Your booking has been received. Pa
 
 The existing backend at `helpers/send-email.js` accepts `{ to, subject, html }`. Integrate sending after booking persistence via a retryable notification job, deduplicated by booking ID and notification type. A mail failure must not fail or duplicate the booking. Send only to the booking account's email, and keep mail credentials on the server.
 
-The on-screen confirmation uses the requested wording promising a confirmation email. Connect and verify this template's delivery before releasing that promise to production. No real customer email has been sent as part of template preparation.
+The on-screen confirmation directs customers to My Bookings and does not promise email delivery. Connect and verify this template through a deduplicated backend notification job before claiming that confirmation email is available. No real customer email has been sent as part of template preparation.

@@ -17,8 +17,8 @@ export const BookingConfirmation: React.FC<Props> = ({ booking, firstName, fullN
     <Modal isOpen onClose={onClose} title={`Phew, your booking went through, ${firstName}!`} maxWidth="lg">
       <div className="space-y-5 text-sm text-slate-600">
         <p className="text-lg font-semibold text-emerald-700">We'll be sweeping your floors in no time.</p>
-        <p>{fullName}, we've successfully received your online booking. We will send you a confirmation email including full details of our service, and we'll get to work on finding you a cleaner right away.</p>
-        <p>As soon as we have found someone suitable in your area, we will contact you to arrange the initial interview.</p>
+        <p>{fullName}, we've successfully received your online booking. You can review the full details in My Bookings, and we'll get to work on assigning an available cleaner.</p>
+        <p>We will update the booking when an eligible agent accepts the assignment.</p>
         <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4 space-y-2">
           <p className="font-semibold text-slate-900">Your reference number</p>
           <p className="font-mono text-lg text-emerald-800 break-all">{booking.reference || `Booking #${booking.id}`}</p>
@@ -29,7 +29,7 @@ export const BookingConfirmation: React.FC<Props> = ({ booking, firstName, fullN
           <p>If you need to get in contact with your local office, please use the details below:</p>
           <p className="font-medium">Lofix Clean Masters &amp; General Ltd</p>
           <a className="block text-emerald-700 underline" href="tel:+2348030430233">0803 043 0233</a>
-          <a className="block text-emerald-700 underline" href="mailto:support@lofix.uk">support@lofix.uk</a>
+          <a className="block text-emerald-700 underline" href="mailto:support@lofix.ng">support@lofix.ng</a>
         </div>
         <p className="text-xs text-slate-500">Your booking has been received. Payment is still pending.</p>
         <div className="flex flex-wrap gap-3">

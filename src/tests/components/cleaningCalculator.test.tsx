@@ -269,7 +269,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     expect(screen.getByText('CLN-TEST-99')).toBeInTheDocument();
     expect(screen.getByText(/Submitted on 11\/11\/2026, 07:42/)).toBeInTheDocument();
     expect(screen.getByText(/Payment is still pending/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'support@lofix.uk' })).toHaveAttribute('href', 'mailto:support@lofix.uk');
+    expect(screen.getByRole('link', { name: 'support@lofix.ng' })).toHaveAttribute('href', 'mailto:support@lofix.ng');
     expect(screen.getByRole('button', { name: 'Continue to payment' })).toBeInTheDocument();
   });
 

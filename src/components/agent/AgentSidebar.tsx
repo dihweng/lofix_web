@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Wrench, Home, UserCheck, Sparkles, LifeBuoy } from 'lucide-react';
-import { SupportTicketModal } from '../support/SupportTicketModal';
 
 interface NavItem {
   label: string;
@@ -16,10 +15,7 @@ const agentNavItems: NavItem[] = [
 ];
 
 export const AgentSidebar: React.FC = () => {
-  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
-
   return (
-    <>
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 min-h-screen border-r border-slate-800">
         {/* Brand Header */}
         <div className="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
@@ -60,28 +56,18 @@ export const AgentSidebar: React.FC = () => {
         </div>
 
         <div className="p-4 border-t border-slate-800 bg-slate-950/50 space-y-3">
-          <button
-            type="button"
-            onClick={() => setIsSupportModalOpen(true)}
+          <a
+            href="mailto:support@lofix.ng?subject=Lofix%20agent%20support"
             className="w-full py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-md shadow-purple-600/20"
           >
             <LifeBuoy className="w-4 h-4" />
             <span>Contact Admin Support</span>
-          </button>
+          </a>
           <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs">
             <p className="font-semibold text-slate-200">Field Operations</p>
             <p className="text-[11px] text-slate-500 mt-0.5">Connected as Agent</p>
           </div>
         </div>
       </aside>
-
-      <SupportTicketModal
-        isOpen={isSupportModalOpen}
-        onClose={() => setIsSupportModalOpen(false)}
-        orderId="AGENT_SUPPORT"
-        title="Agent Support & Admin Message"
-        subtitle="Direct communication channel to Lofix Admin"
-      />
-    </>
   );
 };

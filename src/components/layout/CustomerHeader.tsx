@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
 import { AuthModals } from '../auth/AuthModals';
-import { SupportTicketModal } from '../support/SupportTicketModal';
 import {
   Sparkles,
   Building2,
@@ -28,9 +27,10 @@ export const CustomerHeader: React.FC = () => {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [postLoginPath, setPostLoginPath] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   const openAuth = (mode: 'login' | 'register') => {
     setAuthMode(mode);
@@ -42,6 +42,8 @@ export const CustomerHeader: React.FC = () => {
     const state = location.state as { openAuth?: 'login' | 'register'; authNotice?: string; postLoginPath?: string } | null;
     if (!state?.openAuth) return;
     setAuthMode(state.openAuth);
+    setAuthNotice(state.authNotice || null);
+    setPostLoginPath(state.postLoginPath || null);
     setIsAuthModalOpen(true);
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
   }, [location.pathname, location.search, location.state, navigate]);
@@ -156,8 +158,8 @@ export const CustomerHeader: React.FC = () => {
                     </button>
                     <button
                       onClick={() => {
-                        setIsSupportModalOpen(true);
                         setIsUserDropdownOpen(false);
+                        window.location.href = 'mailto:support@lofix.ng?subject=Lofix%20customer%20support';
                       }}
                       className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2"
                     >
@@ -231,8 +233,8 @@ export const CustomerHeader: React.FC = () => {
               ))}
               <button
                 onClick={() => {
-                  setIsSupportModalOpen(true);
                   setIsMobileMenuOpen(false);
+                  window.location.href = 'mailto:support@lofix.ng?subject=Lofix%20customer%20support';
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 text-left"
               >
@@ -299,14 +301,12 @@ export const CustomerHeader: React.FC = () => {
       <AuthModals
         isOpen={isAuthModalOpen}
         mode={authMode}
-        onClose={() => setIsAuthModalOpen(false)}
+        notice={authNotice}
+        onLoginSuccess={() => {
+          if (postLoginPath) navigate(postLoginPath);
+        }}
+        onClose={() => { setIsAuthModalOpen(false); setAuthNotice(null); setPostLoginPath(null); }}
         onSwitchMode={(mode) => setAuthMode(mode)}
-      />
-
-      {/* Support Ticket Modal */}
-      <SupportTicketModal
-        isOpen={isSupportModalOpen}
-        onClose={() => setIsSupportModalOpen(false)}
       />
     </>
   );
