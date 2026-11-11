@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { cleaningCustomerApi } from '../../api/cleaningCustomer';
 import { CleaningCalculatorPage } from '../../pages/cleaning/CleaningCalculatorPage';
@@ -175,8 +175,8 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     expect(await screen.findByText(/Base cleaning price \(Standard Cleaning\)/i)).toBeInTheDocument();
     expect(screen.getByText(/quote shows the starting price/i)).toBeInTheDocument();
     expect(screen.queryByText(/floor charge|minimum-price adjustment|minimum cleaning price/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Service fee (fixed)')).toBeInTheDocument();
-    expect(screen.getByText('₦500.00')).toBeInTheDocument();
+    const serviceFeeRow = screen.getByText('Service fee (fixed)').parentElement!;
+    expect(within(serviceFeeRow).getByText('₦500.00')).toBeInTheDocument();
     expect(screen.getByText('₦6,500.00')).toBeInTheDocument();
   });
 

@@ -84,6 +84,8 @@ export const CleaningCalculatorPage: React.FC = () => {
   const [numberOfLivingRooms, setNumberOfLivingRooms] = useState<number>(0);
   const [numberOfBathrooms, setNumberOfBathrooms] = useState<number>(1);
 
+  const [roomConfigurationConfirmed, setRoomConfigurationConfirmed] = useState(false);
+
   // Optional Area
   const [dontKnowArea, setDontKnowArea] = useState<boolean>(true);
   const [squareMetersInput, setSquareMetersInput] = useState<string>('100');
@@ -149,26 +151,6 @@ export const CleaningCalculatorPage: React.FC = () => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  useEffect(() => {
-    if (services.length > 0 && !selectedServiceId) {
-      setSelectedServiceId(services[0].id);
-    }
-  }, [services, selectedServiceId]);
-
-  useEffect(() => {
-    if (propertyTypes.length > 0 && !selectedPropertyTypeId) {
-      setSelectedPropertyTypeId(propertyTypes[0].id);
-    }
-  }, [propertyTypes, selectedPropertyTypeId]);
-
-  useEffect(() => {
-    if (savedProperties.length > 0 && !selectedPropertyId) {
-      const firstProp = savedProperties[0];
-      setSelectedPropertyId(firstProp.id);
-      syncDimensionsFromProperty(firstProp);
-    }
-  }, [savedProperties, selectedPropertyId]);
-
   const syncDimensionsFromProperty = (prop: SavedProperty) => {
     if (prop.propertyTypeId) setSelectedPropertyTypeId(prop.propertyTypeId);
     if (prop.numberOfBathrooms) setNumberOfBathrooms(prop.numberOfBathrooms);
@@ -199,6 +181,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   const handleSelectSavedProperty = (prop: SavedProperty) => {
     setSelectedPropertyId(prop.id);
     syncDimensionsFromProperty(prop);
+    setRoomConfigurationConfirmed(true);
     if (!arrivalInstructions && prop.accessInstructions) setArrivalInstructions(prop.accessInstructions);
   };
 
@@ -221,9 +204,15 @@ export const CleaningCalculatorPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!selectedServiceId || !selectedPropertyTypeId) return;
-
     const currentRequestId = ++quoteRequestIdRef.current;
+
+    if (!selectedServiceId || !selectedPropertyTypeId || !roomConfigurationConfirmed) {
+      setQuoteSnapshot(null);
+      setQuoteError(null);
+      setQuoteRequiresAssessment(false);
+      setIsCalculating(false);
+      return;
+    }
 
     if (selectedService?.requiresAssessment) {
       setQuoteSnapshot(null);
@@ -233,10 +222,12 @@ export const CleaningCalculatorPage: React.FC = () => {
       return;
     }
 
+    setQuoteSnapshot(null);
+    setIsCalculating(true);
+    setQuoteError(null);
+    setQuoteRequiresAssessment(false);
+
     const calculate = async () => {
-      setIsCalculating(true);
-      setQuoteError(null);
-      setQuoteRequiresAssessment(false);
       try {
         const addonPayload = Object.entries(selectedAddons)
           .filter(([_, qty]) => qty > 0)
@@ -284,6 +275,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   }, [
     selectedServiceId,
     selectedPropertyTypeId,
+    roomConfigurationConfirmed,
     numberOfBedrooms,
     numberOfLivingRooms,
     numberOfBathrooms,
@@ -322,6 +314,11 @@ export const CleaningCalculatorPage: React.FC = () => {
 
     if (!selectedServiceId) {
       addToast('error', 'Please select a cleaning service.');
+      return;
+    }
+
+    if (!selectedPropertyTypeId || !roomConfigurationConfirmed || !quoteSnapshot || assessmentRequired) {
+      addToast('error', 'Please confirm the room counts and wait for a valid cleaning quote before booking.');
       return;
     }
 
@@ -424,6 +421,10 @@ export const CleaningCalculatorPage: React.FC = () => {
       addToast('error', 'Please select a property type.');
       return;
     }
+    if (currentStep === 2 && !roomConfigurationConfirmed) {
+      addToast('error', 'Please review and confirm the room counts before continuing.');
+      return;
+    }
     if (currentStep === 5 && !selectedPropertyId) {
       addToast('error', 'Please select or add a saved property address to continue.');
       setIsPropertyManagerOpen(true);
@@ -490,7 +491,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                         setCurrentStep(item.step);
                       } else if (item.step === 2 && selectedServiceId) {
                         setCurrentStep(2);
-                      } else if (item.step === 3 && selectedPropertyTypeId) {
+                      } else if (item.step === 3 && selectedPropertyTypeId && roomConfigurationConfirmed) {
                         setCurrentStep(3);
                       } else if (item.step <= currentStep) {
                         setCurrentStep(item.step);
@@ -736,6 +737,20 @@ export const CleaningCalculatorPage: React.FC = () => {
                     />
                   )}
                 </div>
+                <div className="pt-1">
+                  <p className="text-xs text-slate-600 mb-3">
+                    Review the counts above. We will not show a price until you confirm this property setup.
+                  </p>
+                  <Button
+                    type="button"
+                    variant={roomConfigurationConfirmed ? 'outline' : 'primary'}
+                    size="md"
+                    disabled={!selectedPropertyTypeId}
+                    onClick={() => setRoomConfigurationConfirmed(true)}
+                  >
+                    {roomConfigurationConfirmed ? 'Room counts confirmed' : 'Use these room counts'}
+                  </Button>
+                </div>
               </Card>
             )}
 
@@ -889,7 +904,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                   </div>
 
                   {(showDishwashing || isTestMode || Object.values(selectedDishwashingQuantities).some(q => q > 0)) && (
-                    <div role="group" aria-label="Dishwashing charges" className="space-y-4 pt-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div role="group" aria-label="Dishwashing items" className="space-y-4 pt-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                       <p className="text-[11px] text-slate-600">Listed separately from cleaning and included in your quote total.</p>
                       {isDishwashingLoading ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-pulse">
@@ -1130,31 +1145,38 @@ export const CleaningCalculatorPage: React.FC = () => {
                 </div>
               ) : quoteSnapshot ? (
                 <div className="space-y-2.5 py-3 text-xs">
+                  <p className="text-[11px] leading-relaxed text-slate-500">
+                    The quote shows the starting price, room and bathroom charges, optional extras, eligible discounts, and the fixed service fee.
+                  </p>
                   <div className="flex justify-between text-slate-600 font-semibold border-b border-slate-100 pb-2">
-                    <span>Base Cleaning ({quoteSnapshot.serviceName || 'Standard'})</span>
+                    <span>Base cleaning price ({quoteSnapshot.serviceName || 'Standard'})</span>
                     <span className="text-slate-900">
-                      {formatNaira(quoteSnapshot.basePrice || quoteSnapshot.minimumPrice || 0)}
+                      {formatNaira(quoteSnapshot.basePrice)}
                     </span>
                   </div>
 
-                  {quoteSnapshot.roomCharges > 0 && (
+                  {quoteSnapshot.pricePerRoom !== undefined ? (
                     <div className="flex justify-between text-slate-600">
                       <span>
-                        Room Charges ({numberOfBedrooms} beds + {numberOfLivingRooms} parlours = {totalRoomsCount} rooms)
+                        Room charges ({numberOfBedrooms} bedrooms + {numberOfLivingRooms} living rooms = {totalRoomsCount} rooms × {formatNaira(quoteSnapshot.pricePerRoom)} per room)
                       </span>
                       <span>+{formatNaira(quoteSnapshot.roomCharges)}</span>
                     </div>
-                  )}
-                  {quoteSnapshot.bathroomCharges > 0 && (
+                  ) : (
                     <div className="flex justify-between text-slate-600">
-                      <span>Bathroom Charges ({numberOfBathrooms} baths)</span>
-                      <span>+{formatNaira(quoteSnapshot.bathroomCharges)}</span>
+                      <span>Room charges ({numberOfBedrooms} bedrooms + {numberOfLivingRooms} living rooms = {totalRoomsCount} rooms)</span>
+                      <span>+{formatNaira(quoteSnapshot.roomCharges)}</span>
                     </div>
                   )}
-                  {(quoteSnapshot.floorCharges || 0) > 0 && (
+                  {quoteSnapshot.pricePerBathroom !== undefined ? (
                     <div className="flex justify-between text-slate-600">
-                      <span>Floor Charges</span>
-                      <span>+{formatNaira(quoteSnapshot.floorCharges || 0)}</span>
+                      <span>Bathroom charges ({numberOfBathrooms} × {formatNaira(quoteSnapshot.pricePerBathroom)} per bathroom)</span>
+                      <span>+{formatNaira(quoteSnapshot.bathroomCharges)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Bathroom charges ({numberOfBathrooms} bathrooms)</span>
+                      <span>+{formatNaira(quoteSnapshot.bathroomCharges)}</span>
                     </div>
                   )}
                   {quoteSnapshot.addonsTotal > 0 && (
@@ -1194,6 +1216,11 @@ export const CleaningCalculatorPage: React.FC = () => {
                     </div>
                   )}
 
+                  <div className="flex justify-between text-slate-600">
+                    <span>Service fee (fixed)</span>
+                    <span>{formatNaira(quoteSnapshot.serviceFee || 0)}</span>
+                  </div>
+
                   <div className="border-t border-slate-200 pt-3 flex justify-between items-baseline">
                     <span className="font-bold text-slate-900 text-sm">Total Price</span>
                     <span className="text-2xl font-black text-emerald-700 font-display">
@@ -1203,7 +1230,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="py-8 text-center text-xs text-slate-400">
-                  Select parameters to view price preview
+                  Choose a cleaning service and property type, then confirm your room counts to view a quote.
                 </div>
               )}
 
@@ -1224,7 +1251,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                   size="md"
                   className="w-full font-bold text-xs sm:text-sm"
                   isLoading={isBookingLoading}
-                  disabled={isBookingLoading || isCalculating || !!quoteError || assessmentRequired}
+                  disabled={isBookingLoading || isCalculating || !!quoteError || assessmentRequired || !quoteSnapshot}
                   onClick={handleBookNow}
                   leftIcon={<Sparkles className="w-4 h-4" />}
                 >
