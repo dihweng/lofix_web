@@ -66,6 +66,9 @@ export const CustomerFooter: React.FC = () => {
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100 mb-4">Support & Contact</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
+              <li>
+                <Link to="/faqs" className="hover:text-emerald-400 transition-colors">Frequently Asked Questions</Link>
+              </li>
               <li className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-500" />
                 <span>Lagos & Abuja, Nigeria</span>

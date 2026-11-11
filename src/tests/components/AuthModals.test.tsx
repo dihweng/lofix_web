@@ -77,7 +77,7 @@ describe('AuthModals component', () => {
 
   it('registers a customer with the required public payload and waits for verification', async () => {
     mockRegister.mockResolvedValueOnce({
-      message: 'Registration successful, please check your phone or email for verification instructions',
+      message: 'Registration successful, please check your email for verification instructions',
     });
     const onClose = vi.fn();
     const LocationProbe = () => {
@@ -95,7 +95,6 @@ describe('AuthModals component', () => {
     fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Jane' } });
     fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: 'Doe' } });
     fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'jane@example.com' } });
-    fireEvent.change(screen.getByLabelText(/phone number/i), { target: { value: '08012345678' } });
     fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: 'pass1234' } });
     fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'pass1234' } });
     fireEvent.click(screen.getByRole('checkbox'));
@@ -107,7 +106,6 @@ describe('AuthModals component', () => {
         firstName: 'Jane',
         lastName: 'Doe',
         email: 'jane@example.com',
-        phoneNumber: '08012345678',
         password: 'pass1234',
         confirmPassword: 'pass1234',
         acceptTerms: true,
@@ -119,15 +117,14 @@ describe('AuthModals component', () => {
       pathname: '/account/verify-email',
       state: {
         email: 'jane@example.com',
-        phoneNumber: '08012345678',
-        registrationMessage: 'Registration successful, please check your phone or email for verification instructions',
+        registrationMessage: 'Registration successful, please check your email for verification instructions',
       },
     });
   });
 
   it('shows validation errors returned by the registration API', async () => {
     mockRegister.mockRejectedValueOnce({
-      response: { data: { message: 'Phone number already registered' } },
+      response: { data: { message: 'Email address already registered' } },
     });
 
     const onClose = vi.fn();
@@ -140,13 +137,12 @@ describe('AuthModals component', () => {
     fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Jane' } });
     fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: 'Doe' } });
     fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'jane@example.com' } });
-    fireEvent.change(screen.getByLabelText(/phone number/i), { target: { value: '08012345678' } });
     fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: 'pass1234' } });
     fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'pass1234' } });
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /create customer account/i }));
 
-    expect(await screen.findByText('Phone number already registered')).toBeInTheDocument();
+    expect(await screen.findByText('Email address already registered')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
     expect(mockLogin).not.toHaveBeenCalled();
   });

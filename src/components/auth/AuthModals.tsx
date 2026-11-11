@@ -5,11 +5,13 @@ import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { Select } from '../common/Select';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, Lock, User, Phone, Sparkles, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Sparkles, AlertCircle } from 'lucide-react';
 
 interface AuthModalsProps {
   isOpen: boolean;
   mode: 'login' | 'register';
+  notice?: string | null;
+  onLoginSuccess?: () => void;
   onClose: () => void;
   onSwitchMode: (mode: 'login' | 'register') => void;
 }
@@ -17,6 +19,8 @@ interface AuthModalsProps {
 export const AuthModals: React.FC<AuthModalsProps> = ({
   isOpen,
   mode,
+  notice,
+  onLoginSuccess,
   onClose,
   onSwitchMode,
 }) => {
@@ -32,7 +36,6 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [regEmail, setRegEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -56,13 +59,14 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
     setIsLoading(true);
     try {
       await login({ email: loginEmail.trim(), password: loginPassword });
+      onLoginSuccess?.();
       onClose();
       resetState();
     } catch (err: any) {
       const message = err.response?.data?.message || err.message;
       setErrorMsg(
         message === 'Email or password is incorrect'
-          ? 'Email or password is incorrect, or your account is not verified. Complete the email and phone verification steps sent during registration.'
+          ? 'Email or password is incorrect, or your account is not verified. Complete the email verification sent during registration.'
           : message || 'Login failed. Please verify credentials.'
       );
     } finally {
@@ -74,8 +78,8 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!firstName.trim() || !lastName.trim() || !regEmail.trim() || !phoneNumber.trim()) {
-      setErrorMsg('Please fill in all required contact information.');
+    if (!firstName.trim() || !lastName.trim() || !regEmail.trim()) {
+      setErrorMsg('Please fill in all required information.');
       return;
     }
 
@@ -101,7 +105,6 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: regEmail.trim(),
-        phoneNumber: phoneNumber.trim(),
         password: regPassword,
         confirmPassword,
         acceptTerms: true,
@@ -110,7 +113,6 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
       navigate('/account/verify-email', {
         state: {
           email: regEmail.trim(),
-          phoneNumber: phoneNumber.trim(),
           registrationMessage: result.message,
         },
       });
@@ -136,6 +138,12 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-xs text-red-800">
           <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
           <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {notice && mode === 'login' && (
+        <div role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900">
+          {notice}
         </div>
       )}
 
@@ -233,16 +241,6 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
             onChange={(e) => setRegEmail(e.target.value)}
             placeholder="john.doe@example.com"
             leftIcon={<Mail className="w-4 h-4" />}
-          />
-
-          <Input
-            label="Phone Number"
-            type="tel"
-            required
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="08012345678"
-            leftIcon={<Phone className="w-4 h-4" />}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

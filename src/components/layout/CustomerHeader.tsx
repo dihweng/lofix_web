@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
@@ -16,6 +16,7 @@ import {
   CalendarCheck,
   Home,
   Zap,
+  HelpCircle,
 } from 'lucide-react';
 
 export const CustomerHeader: React.FC = () => {
@@ -25,6 +26,8 @@ export const CustomerHeader: React.FC = () => {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [postLoginPath, setPostLoginPath] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
@@ -34,11 +37,22 @@ export const CustomerHeader: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+  useEffect(() => {
+    const state = location.state as { openAuth?: 'login' | 'register'; authNotice?: string; postLoginPath?: string } | null;
+    if (!state?.openAuth) return;
+    setAuthMode(state.openAuth);
+    setAuthNotice(state.authNotice || null);
+    setPostLoginPath(state.postLoginPath || null);
+    setIsAuthModalOpen(true);
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [location.pathname, location.search, location.state, navigate]);
+
   const navLinks = [
     { name: 'Home', path: '/', icon: <Home className="w-4 h-4" /> },
     { name: 'Apartments & Shortlets', path: '/shortlets', icon: <Building2 className="w-4 h-4" /> },
     { name: 'Cleaning Calculator', path: '/cleaning', icon: <Calculator className="w-4 h-4" /> },
     { name: 'Bills & Utilities', path: '/utilities', icon: <Zap className="w-4 h-4 text-amber-500" /> },
+    { name: 'FAQs', path: '/faqs', icon: <HelpCircle className="w-4 h-4" /> },
   ];
 
   if (isAuthenticated) {
@@ -270,7 +284,11 @@ export const CustomerHeader: React.FC = () => {
       <AuthModals
         isOpen={isAuthModalOpen}
         mode={authMode}
-        onClose={() => setIsAuthModalOpen(false)}
+        notice={authNotice}
+        onLoginSuccess={() => {
+          if (postLoginPath) navigate(postLoginPath);
+        }}
+        onClose={() => { setIsAuthModalOpen(false); setAuthNotice(null); setPostLoginPath(null); }}
         onSwitchMode={(mode) => setAuthMode(mode)}
       />
     </>

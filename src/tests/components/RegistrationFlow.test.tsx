@@ -22,7 +22,7 @@ it('requires explicit consent and keeps a registration 400 visible without fallb
   // Let startup finish before distinguishing it from registration-triggered refresh.
   await new Promise(resolve => setTimeout(resolve, 0));
   refresh.mockClear();
-  for (const [label, value] of [[/first name/i, 'Jane'], [/last name/i, 'Doe'], [/email address/i, 'jane@example.com'], [/phone number/i, '08012345678'], [/^password/i, 'pass1234'], [/confirm password/i, 'pass1234']] as const) {
+  for (const [label, value] of [[/first name/i, 'Jane'], [/last name/i, 'Doe'], [/email address/i, 'jane@example.com'], [/^password/i, 'pass1234'], [/confirm password/i, 'pass1234']] as const) {
     fireEvent.change(screen.getByLabelText(label), { target: { value } });
   }
   fireEvent.submit(container.querySelector('form')!);

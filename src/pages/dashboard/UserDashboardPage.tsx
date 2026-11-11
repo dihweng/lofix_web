@@ -48,14 +48,13 @@ import {
   EyeOff,
   Lock,
   Trash2,
-  Smartphone,
   CreditCard,
 } from 'lucide-react';
 
 export const UserDashboardPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, updateProfile, refreshUser, completePhoneVerification } = useAuth();
+  const { user, isAuthenticated, updateProfile, refreshUser } = useAuth();
 
   const activeTabFromUrl = searchParams.get('tab') || 'buy-again';
   const [activeTab, setActiveTab] = useState<'bookings' | 'enquiries' | 'utilities' | 'buy-again' | 'properties' | 'profile'>(
@@ -135,22 +134,15 @@ export const UserDashboardPage: React.FC = () => {
   const [title, setTitle] = useState(user?.title || 'Mr');
   const [firstName, setFirstName] = useState(user?.firstName || 'Demo');
   const [lastName, setLastName] = useState(user?.lastName || 'Customer');
-  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '08031234567');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   // Settings Sub-Tab Navigation State
-  const [settingsSubTab, setSettingsSubTab] = useState<'profile' | 'security' | 'verification' | 'phone-verification' | 'delete'>('profile');
+  const [settingsSubTab, setSettingsSubTab] = useState<'profile' | 'security' | 'verification' | 'delete'>('profile');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
-  // Phone Verification OTP State
-  const [phoneOtp, setPhoneOtp] = useState('');
   const [emailOtp, setEmailOtp] = useState('');
-  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(user?.isPhoneVerified || user?.activated || false);
 
   // Change Password State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -182,47 +174,12 @@ export const UserDashboardPage: React.FC = () => {
         title,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        phoneNumber: phoneNumber.trim(),
       });
       addToast('success', 'Profile updated successfully!');
     } catch (err: any) {
       addToast('error', err.response?.data?.message || err.message || 'Failed to update profile.');
     } finally {
       setIsUpdatingProfile(false);
-    }
-  };
-
-  const handleRequestPhoneOtp = async () => {
-    setIsRequestingOtp(true);
-    try {
-      const res = await authApi.requestPhoneOtp(user?.phoneNumber || phoneNumber);
-      setPhoneOtpSent(true);
-      addToast('success', res.message || 'OTP sent successfully to your phone number!');
-    } catch (err: any) {
-      addToast('error', err.response?.data?.message || err.message || 'Failed to request phone OTP.');
-    } finally {
-      setIsRequestingOtp(false);
-    }
-  };
-
-  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneOtp.trim()) {
-      addToast('error', 'Please enter the verification code.');
-      return;
-    }
-    setIsVerifyingOtp(true);
-    try {
-      const account = await authApi.verifyPhoneOtp(phoneOtp.trim(), user?.phoneNumber || phoneNumber);
-      completePhoneVerification(account);
-      setIsPhoneVerified(true);
-      addToast('success', account.isVerified
-        ? 'Phone verified and signed in successfully.'
-        : 'Phone verified. Please verify your email before signing in.');
-    } catch (err: any) {
-      addToast('error', err.response?.data?.message || err.message || 'OTP verification failed.');
-    } finally {
-      setIsVerifyingOtp(false);
     }
   };
 
@@ -1111,7 +1068,6 @@ export const UserDashboardPage: React.FC = () => {
                 { id: 'profile' as const, label: 'Update Profile', icon: <User className="w-4 h-4" /> },
                 { id: 'security' as const, label: 'Change Password', icon: <Lock className="w-4 h-4" /> },
                 { id: 'verification' as const, label: 'Account Verification', icon: <ShieldCheck className="w-4 h-4" /> },
-                { id: 'phone-verification' as const, label: 'Phone Verification', icon: <Smartphone className="w-4 h-4" /> },
                 { id: 'delete' as const, label: 'Delete Account', icon: <Trash2 className="w-4 h-4 text-red-500" /> },
               ].map((item) => (
                 <button
@@ -1179,13 +1135,6 @@ export const UserDashboardPage: React.FC = () => {
                       disabled
                       value={user?.email || ''}
                       helperText="Email address cannot be modified directly."
-                    />
-
-                    <Input
-                      label="Phone Number"
-                      required
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
                     />
 
                     <Button
@@ -1366,77 +1315,6 @@ export const UserDashboardPage: React.FC = () => {
                       </Button>
                     </form>
                   )}
-                </Card>
-              )}
-
-              {settingsSubTab === 'phone-verification' && (
-                <Card className="space-y-5">
-                  <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-emerald-600" /> Phone Number Verification (OTP)
-                      </h3>
-                      <p className="text-xs text-slate-500">Verify the phone number registered to your account.</p>
-                    </div>
-                    <Badge variant={isPhoneVerified ? 'success' : 'warning'} size="sm">
-                      {isPhoneVerified ? 'Phone Verified' : 'Unverified'}
-                    </Badge>
-                  </div>
-
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-semibold">Registered Phone Number:</span>
-                      <span className="font-mono font-bold text-slate-900 text-sm">{phoneNumber || user?.phoneNumber || 'No phone number'}</span>
-                    </div>
-
-                    {!phoneOtpSent ? (
-                      <div className="pt-2">
-                        <Button
-                          type="button"
-                          variant="primary"
-                          size="md"
-                          isLoading={isRequestingOtp}
-                          onClick={handleRequestPhoneOtp}
-                          leftIcon={<Smartphone className="w-4 h-4" />}
-                        >
-                          Request OTP Code
-                        </Button>
-                      </div>
-                    ) : (
-                      <form onSubmit={handleVerifyPhoneOtp} className="space-y-3 pt-2 border-t border-slate-200">
-                        <p className="text-xs text-emerald-700 font-bold">
-                          ✓ OTP code sent to your phone. Please enter it below to confirm.
-                        </p>
-                        <Input
-                          label="Enter 6-Digit OTP Code"
-                          placeholder="e.g. 123456"
-                          value={phoneOtp}
-                          onChange={(e) => setPhoneOtp(e.target.value)}
-                          required
-                        />
-                        <div className="flex items-center gap-2 pt-1">
-                          <Button
-                            type="submit"
-                            variant="primary"
-                            size="md"
-                            isLoading={isVerifyingOtp}
-                            leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                          >
-                            Verify OTP
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="md"
-                            isLoading={isRequestingOtp}
-                            onClick={handleRequestPhoneOtp}
-                          >
-                            Resend Code
-                          </Button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
                 </Card>
               )}
 

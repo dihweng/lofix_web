@@ -21,7 +21,6 @@ it('registers without a bearer token and sends exactly the public registration p
     firstName: 'Jane',
     lastName: 'Doe',
     email: 'jane@example.com',
-    phoneNumber: '08012345678',
     password: 'pass1234',
     confirmPassword: 'pass1234',
     acceptTerms: true as const,
@@ -32,7 +31,7 @@ it('registers without a bearer token and sends exactly the public registration p
   const adapter: AxiosAdapter = async (config) => {
     requests.push(config);
     return {
-      data: { message: 'Check your phone or email for verification instructions' },
+      data: { message: 'Check your email for verification instructions' },
       status: 200,
       statusText: 'OK',
       headers: {},
@@ -42,7 +41,7 @@ it('registers without a bearer token and sends exactly the public registration p
   apiClient.defaults.adapter = adapter;
 
   await expect(authApi.register(payload)).resolves.toEqual({
-    message: 'Check your phone or email for verification instructions',
+    message: 'Check your email for verification instructions',
   });
 
   expect(requests).toHaveLength(1);
@@ -60,7 +59,7 @@ it('resolves local and production API defaults without a stale host', () => {
   expect(resolveApiBaseUrl('https://api.lofix.ng', false)).toBe('https://api.lofix.ng');
 });
 
-it('uses the API verification token and phone-number request shapes', async () => {
+it('keeps legacy phone endpoints separate from the email-first registration payload', async () => {
   const adapter: AxiosAdapter = async (config) => {
     requests.push(config);
     return {

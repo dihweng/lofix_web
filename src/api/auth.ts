@@ -35,7 +35,6 @@ export interface RegistrationPayload {
   firstName: string;
   lastName: string;
   email: string;
-  phoneNumber: string;
   password: string;
   confirmPassword: string;
   acceptTerms: true;
