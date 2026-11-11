@@ -5,6 +5,7 @@ import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { Select } from '../common/Select';
 import { useAuth } from '../../context/AuthContext';
+import { authApi } from '../../api/auth';
 import { Mail, Lock, User, Sparkles, AlertCircle } from 'lucide-react';
 
 interface AuthModalsProps {
@@ -64,6 +65,22 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
       resetState();
     } catch (err: any) {
       const message = err.response?.data?.message || err.message;
+      if (err.response?.data?.code === 'EMAIL_VERIFICATION_REQUIRED' || message === 'Email verification is required') {
+        let deliveryMessage = '';
+        let deliveryError = '';
+        try {
+          await authApi.resendEmailVerification({ email: loginEmail.trim(), password: loginPassword });
+          deliveryMessage = 'A verification code has been sent to your email. Check your inbox and spam folder.';
+        } catch (deliveryFailure: any) {
+          deliveryError = deliveryFailure.response?.data?.message || 'We could not send your verification email. Please try again below.';
+        }
+        setLoginPassword('');
+        onClose();
+        navigate('/account/verify-email', {
+          state: { email: loginEmail.trim(), deliveryMessage, deliveryError },
+        });
+        return;
+      }
       setErrorMsg(
         message === 'Email or password is incorrect'
           ? 'Email or password is incorrect, or your account is not verified. Complete the email verification sent during registration.'

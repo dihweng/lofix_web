@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { authApi } from '../../api/auth';
 import { AuthModals } from '../../components/auth/AuthModals';
 import { BrowserRouter, MemoryRouter, useLocation } from 'react-router-dom';
 
@@ -17,6 +18,25 @@ vi.mock('../../context/AuthContext', () => ({
 }));
 
 describe('AuthModals component', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+  it.each([true, false])('routes unverified login to email verification (delivery succeeds: %s)', async (delivered) => {
+    mockLogin.mockRejectedValueOnce({ response: { data: { message: 'Email verification is required' } } });
+    const send = vi.spyOn(authApi, 'resendEmailVerification');
+    if (delivered) send.mockResolvedValue({ message: 'Sent' });
+    else send.mockRejectedValue({ response: { data: { message: 'Delivery unavailable' } } });
+    const LocationProbe = () => { const location = useLocation(); return <output data-testid="verification-route">{JSON.stringify(location)}</output>; };
+    render(<MemoryRouter><LocationProbe /><AuthModals isOpen mode="login" onClose={() => {}} onSwitchMode={() => {}} /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'jane@example.com' } });
+    fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: 'private-password' } });
+    fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+    await waitFor(() => expect(screen.getByTestId('verification-route')).toHaveTextContent('/account/verify-email'));
+    expect(send).toHaveBeenCalledWith({ email: 'jane@example.com', password: 'private-password' });
+    const route = JSON.parse(screen.getByTestId('verification-route').textContent || '{}');
+    expect(route.state.email).toBe('jane@example.com');
+    expect(JSON.stringify(route.state)).not.toContain('private-password');
+    if (delivered) expect(route.state.deliveryMessage).toMatch(/code has been sent/);
+    else expect(route.state.deliveryError).toBe('Delivery unavailable');
+  });
   beforeEach(() => {
     mockLogin.mockReset();
     mockRegister.mockReset();

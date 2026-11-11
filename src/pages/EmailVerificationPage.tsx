@@ -11,11 +11,33 @@ export const EmailVerificationPage: React.FC = () => {
   const registrationState = location.state as {
     email?: string;
     registrationMessage?: string;
+    deliveryMessage?: string;
+    deliveryError?: string;
   } | null;
   const [searchParams] = useSearchParams();
   const [token, setToken] = useState(searchParams.get('token') || '');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(registrationState?.deliveryError || null);
+  const [deliveryMessage, setDeliveryMessage] = useState(registrationState?.deliveryMessage || '');
+  const [email, setEmail] = useState(registrationState?.email || '');
+  const [password, setPassword] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleResend = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSending(true);
+    setErrorMessage(null);
+    setDeliveryMessage('');
+    try {
+      const result = await authApi.resendEmailVerification({ email: email.trim(), password });
+      setDeliveryMessage(result.message);
+      setPassword('');
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.message || 'Unable to send verification email. Please try again.');
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -59,11 +81,12 @@ export const EmailVerificationPage: React.FC = () => {
             {registrationState?.registrationMessage
               ? `${registrationState.registrationMessage} `
               : ''}
-            {registrationState?.email
+            {registrationState?.email && !registrationState?.deliveryError && !registrationState?.deliveryMessage
               ? `We sent an email verification link to ${registrationState.email}. `
               : ''}
-            Open the link in your email to confirm your address and activate your account.
+            Enter the one-time verification code from your email, or open its verification link, to activate your account.
           </p>
+          {deliveryMessage && <p role="status" className="mt-4 text-sm text-emerald-700">{deliveryMessage}</p>}
 
           {errorMessage && (
             <div className="mt-5 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
@@ -74,7 +97,8 @@ export const EmailVerificationPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <Input
-                label="Email verification token"
+                label="Email verification code"
+                autoComplete="one-time-code"
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
                 required
@@ -86,6 +110,13 @@ export const EmailVerificationPage: React.FC = () => {
               >
                 {isSubmitting ? 'Verifying...' : 'Verify Email'}
               </button>
+          </form>
+          <form onSubmit={handleResend} className="mt-8 space-y-4 border-t border-slate-200 pt-6">
+            <h2 className="font-semibold text-slate-900">Need another code?</h2>
+            <p className="text-sm text-slate-600">Confirm your email and password to send a new verification email.</p>
+            <Input label="Email address" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <Input label="Password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+            <button type="submit" disabled={isSending || isSubmitting} className="text-emerald-700 font-semibold disabled:opacity-60">{isSending ? 'Sending...' : 'Send verification code'}</button>
           </form>
         </div>
       </section>

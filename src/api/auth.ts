@@ -68,6 +68,8 @@ export interface ChangePasswordResponse {
 }
 
 export const authApi = {
+  resendEmailVerification: async (credentials: LoginCredentials): Promise<{ message: string }> =>
+    (await apiClient.post('/accounts/resend-verification', { ...credentials, channel: 'email' })).data,
   forgotPassword: async (email: string): Promise<{ message: string }> =>
     (await apiClient.post('/accounts/forgot-password', { email })).data,
   validateResetToken: async (token: string): Promise<{ message: string }> =>

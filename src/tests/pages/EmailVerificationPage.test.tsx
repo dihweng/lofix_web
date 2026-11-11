@@ -37,7 +37,7 @@ it('verifies the token then returns home with the login handoff', async () => {
     </MemoryRouter>
   );
 
-  expect(screen.getByLabelText(/email verification token/i)).toHaveValue('mail-token');
+  expect(screen.getByLabelText(/email verification code/i)).toHaveValue('mail-token');
   expect(screen.getByText(/we sent an email verification link to jane@example.com/i)).toBeInTheDocument();
   expect(screen.queryByLabelText(/registered phone number/i)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /verify email/i }));
