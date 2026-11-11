@@ -923,7 +923,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                             return (
                               <div
                                 key={item.id}
-                                className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                                className={`p-4 rounded-2xl border flex flex-wrap gap-3 items-center justify-between transition-all ${
                                   qty > 0 ? 'border-emerald-500 bg-emerald-50/40 shadow-xs' : 'border-slate-200 bg-white'
                                 }`}
                               >
@@ -940,17 +940,35 @@ export const CleaningCalculatorPage: React.FC = () => {
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   <button
                                     type="button"
+                                    aria-label={`Decrease ${item.name} count`}
                                     onClick={() => handleDishwashingQuantityChange(item.id, -1)}
                                     disabled={qty === 0}
                                     className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 flex items-center justify-center text-slate-700 font-bold text-xs"
                                   >
                                     <Minus className="w-3.5 h-3.5" />
                                   </button>
-                                  <span className="w-6 text-center text-xs font-black text-slate-900">
-                                    {qty}
-                                  </span>
+                                  <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min={0}
+                                    max={1000}
+                                    step={1}
+                                    aria-label={`${item.name} count`}
+                                    value={qty || ''}
+                                    placeholder="0"
+                                    onFocus={(event) => event.currentTarget.select()}
+                                    onChange={(event) => {
+                                      const value = event.currentTarget.valueAsNumber;
+                                      const quantity = Number.isFinite(value)
+                                        ? Math.min(1000, Math.max(0, Math.trunc(value)))
+                                        : 0;
+                                      setSelectedDishwashingQuantities((prev) => ({ ...prev, [item.id]: quantity }));
+                                    }}
+                                    className="w-16 h-8 rounded-lg border border-slate-300 bg-white text-center text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                  />
                                   <button
                                     type="button"
+                                    aria-label={`Increase ${item.name} count`}
                                     onClick={() => handleDishwashingQuantityChange(item.id, 1)}
                                     disabled={qty >= 1000}
                                     className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-xs"

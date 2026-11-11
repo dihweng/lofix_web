@@ -218,13 +218,17 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     const plusButtons = screen.getAllByRole('button').filter((btn) => btn.querySelector('svg.lucide-plus'));
     expect(plusButtons.length).toBeGreaterThan(0);
 
-    // Click plus button on Glass Cups
-    fireEvent.click(plusButtons[plusButtons.length - 2]);
+    const countInput = screen.getByRole('spinbutton', { name: 'Glass Cups count' });
+    fireEvent.change(countInput, { target: { value: '12' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Increase Glass Cups count' }));
+    expect(countInput).toHaveValue(13);
+    fireEvent.click(screen.getByRole('button', { name: 'Decrease Glass Cups count' }));
+    expect(countInput).toHaveValue(12);
 
     await waitFor(() => {
       expect(cleaningCustomerApi.calculateQuote).toHaveBeenCalledWith(
         expect.objectContaining({
-          dishwashingItems: expect.arrayContaining([{ itemId: 101, quantity: 1 }]),
+          dishwashingItems: expect.arrayContaining([{ itemId: 101, quantity: 12 }]),
         })
       );
     });
@@ -241,7 +245,7 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     await waitFor(() => {
       expect(cleaningCustomerApi.createBooking).toHaveBeenCalledWith(
         expect.objectContaining({
-          dishwashingItems: expect.arrayContaining([{ itemId: 101, quantity: 1 }]),
+          dishwashingItems: expect.arrayContaining([{ itemId: 101, quantity: 12 }]),
         })
       );
     });
