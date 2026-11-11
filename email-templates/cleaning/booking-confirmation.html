@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Your Lofix cleaning booking</title></head>
+<body style="margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#334155;line-height:1.6">
+  <table role="presentation" style="width:100%;border-collapse:collapse"><tr><td style="padding:24px 12px">
+    <table role="presentation" style="width:100%;max-width:600px;margin:auto;background:#fff;border-collapse:collapse">
+      <tr><td style="padding:24px;background:#047857;color:#fff;font-size:20px;font-weight:bold">Lofix Clean Masters &amp; General Ltd</td></tr>
+      <tr><td style="padding:24px">
+        <h1 style="font-size:24px;color:#064e3b">Phew, your booking went through, {{firstName}}!</h1>
+        <p style="font-size:18px">We'll be sweeping your floors in no time.</p>
+        <p>{{fullName}}, we've successfully received your online booking. Here are the full details of your cleaning service. We'll get to work on finding you a cleaner right away.</p>
+        <p>As soon as we have found someone suitable in your area, we will contact you to arrange the initial interview.</p>
+        <h2 style="font-size:18px">Your reference number</h2>
+        <p style="font-size:20px;color:#047857">{{reference}}</p>
+        <p>Submitted on {{submittedAt}}</p>
+        <h2 style="font-size:18px">Your cleaning service</h2>
+        <table style="width:100%;border-collapse:collapse;text-align:left">
+          <tr><th scope="row">Service</th><td>{{serviceName}}</td></tr>
+          <tr><th scope="row">Requested date and time</th><td>{{scheduledAt}}</td></tr>
+          <tr><th scope="row">Property address</th><td>{{propertyAddress}}</td></tr>
+          <tr><th scope="row">Rooms</th><td>{{roomSummary}}</td></tr>
+          <tr><th scope="row">Supplies</th><td>{{supplies}}</td></tr>
+          <tr><th scope="row">Frequency</th><td>{{frequency}}</td></tr>
+          <tr><th scope="row">Additional services</th><td>{{addons}}</td></tr>
+          <tr><th scope="row">Dishwashing items</th><td>{{dishwashingItems}}</td></tr>
+          <tr><th scope="row">Arrival instructions</th><td>{{arrivalInstructions}}</td></tr>
+          <tr><th scope="row">Total</th><td>{{total}}</td></tr>
+          <tr><th scope="row">Payment status</th><td>{{paymentStatus}}</td></tr>
+        </table>
+        <p>{{paymentMessage}}</p>
+        <p><a href="https://lofix.ng/dashboard?tab=bookings" style="color:#047857;font-weight:bold">View your bookings</a></p>
+        <h2 style="font-size:18px">Contact details</h2>
+        <p>If you need to get in contact with your local office, please use the details below:</p>
+        <p>Lofix Clean Masters &amp; General Ltd<br><a href="tel:+2348030430233">0803 043 0233</a><br><a href="mailto:support@lofix.uk">support@lofix.uk</a></p>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body>
+</html>

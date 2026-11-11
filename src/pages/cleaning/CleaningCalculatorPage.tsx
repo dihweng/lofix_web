@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { cleaningCustomerApi, SavedProperty } from '../../api/cleaningCustomer';
 import {
   PriceSnapshot,
+  CleaningBooking,
   SuppliesPreference,
   CleaningFrequency,
 } from '../../api/bookings';
@@ -15,6 +16,7 @@ import { Select } from '../../components/common/Select';
 import { Badge } from '../../components/common/Badge';
 import { ToastMessage } from '../../components/common/Toast';
 import { PropertyManagerModal } from '../../components/cleaning/PropertyManagerModal';
+import { BookingConfirmation } from '../../components/cleaning/BookingConfirmation';
 import { PriceChangeAcceptanceModal } from '../../components/listings/PriceChangeAcceptanceModal';
 import { PaymentModal } from '../../components/payment/PaymentModal';
 import { formatNaira } from '../../utils/money';
@@ -45,7 +47,7 @@ export const CleaningCalculatorPage: React.FC = () => {
 
   // Wizard Step State (1 to 5)
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [showDishwashing, setShowDishwashing] = useState<boolean>(isTestMode);
+  const [showDishwashing, setShowDishwashing] = useState<boolean>(false);
 
   const { data: services = [] } = useQuery({
     queryKey: ['cleaningServices'],
@@ -132,6 +134,8 @@ export const CleaningCalculatorPage: React.FC = () => {
 
   // Modals & Payment State
   const [checkoutTransactionId, setCheckoutTransactionId] = useState<number | null>(null);
+  const [createdBooking, setCreatedBooking] = useState<CleaningBooking | null>(null);
+  const [showBookingConfirmation, setShowBookingConfirmation] = useState(false);
   const [isPropertyManagerOpen, setIsPropertyManagerOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -379,6 +383,7 @@ export const CleaningCalculatorPage: React.FC = () => {
       });
 
       const txId = booking.transactionId || booking.id;
+      setCreatedBooking(booking);
 
       if (quoteSnapshot && booking.total !== quoteSnapshot.total) {
         setPendingBooking({
@@ -387,8 +392,7 @@ export const CleaningCalculatorPage: React.FC = () => {
           serverTotal: booking.total,
         });
       } else {
-        addToast('success', `Cleaning Job created! Launching payment checkout...`);
-        setCheckoutTransactionId(txId);
+        setShowBookingConfirmation(true);
       }
     } catch (err: any) {
       const isAssessmentRequired = err.response?.data?.code === 'ASSESSMENT_REQUIRED';
@@ -405,7 +409,7 @@ export const CleaningCalculatorPage: React.FC = () => {
 
   const handleAcceptPriceChange = () => {
     if (pendingBooking) {
-      setCheckoutTransactionId(pendingBooking.transactionId);
+      setShowBookingConfirmation(true);
       setPendingBooking(null);
     }
   };
@@ -889,7 +893,9 @@ export const CleaningCalculatorPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <button
                       type="button"
-                      onClick={() => setShowDishwashing(!showDishwashing)}
+                      onClick={() => setShowDishwashing((visible) => !visible)}
+                      aria-expanded={showDishwashing}
+                      aria-controls="dishwashing-catalogue"
                       className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-emerald-600 transition-colors"
                     >
                       <Utensils className="w-4 h-4 text-emerald-600" />
@@ -903,8 +909,8 @@ export const CleaningCalculatorPage: React.FC = () => {
                     </Badge>
                   </div>
 
-                  {(showDishwashing || isTestMode || Object.values(selectedDishwashingQuantities).some(q => q > 0)) && (
-                    <div role="group" aria-label="Dishwashing items" className="space-y-4 pt-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  {showDishwashing && (
+                    <div id="dishwashing-catalogue" role="group" aria-label="Dishwashing items" className="space-y-4 pt-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                       <p className="text-[11px] text-slate-600">Listed separately from cleaning and included in your quote total.</p>
                       {isDishwashingLoading ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-pulse">
@@ -1308,6 +1314,22 @@ export const CleaningCalculatorPage: React.FC = () => {
         onClose={() => setIsAuthModalOpen(false)}
         onSwitchMode={(mode) => setAuthMode(mode)}
       />
+
+      {showBookingConfirmation && createdBooking && (
+        <BookingConfirmation
+          booking={createdBooking}
+          firstName={user?.firstName || 'there'}
+          fullName={[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Hello'}
+          onContinue={() => {
+            setShowBookingConfirmation(false);
+            setCheckoutTransactionId(createdBooking.transactionId || createdBooking.id);
+          }}
+          onClose={() => {
+            setShowBookingConfirmation(false);
+            navigate('/dashboard?tab=bookings');
+          }}
+        />
+      )}
 
       <PaymentModal
         isOpen={!!checkoutTransactionId}

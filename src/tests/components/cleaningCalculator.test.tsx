@@ -206,9 +206,15 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
       transactionId: 202,
       total: 1350000,
       status: 'PAYMENT_PENDING',
+      reference: 'CLN-TEST-99',
+      createdAt: '2026-11-11T06:42:00.000Z',
     });
 
     await renderComponent();
+
+    const catalogueToggle = screen.getByRole('button', { name: /Dishwashing Catalogue/i });
+    expect(catalogueToggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(catalogueToggle);
 
     await waitFor(() => {
       expect(screen.getAllByText(/Glass Cups/i)[0]).toBeInTheDocument();
@@ -224,6 +230,13 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     expect(countInput).toHaveValue(13);
     fireEvent.click(screen.getByRole('button', { name: 'Decrease Glass Cups count' }));
     expect(countInput).toHaveValue(12);
+
+    fireEvent.click(catalogueToggle);
+    expect(catalogueToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('group', { name: 'Dishwashing items' })).not.toBeInTheDocument();
+    fireEvent.click(catalogueToggle);
+    expect(catalogueToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('spinbutton', { name: 'Glass Cups count' })).toHaveValue(12);
 
     await waitFor(() => {
       expect(cleaningCustomerApi.calculateQuote).toHaveBeenCalledWith(
@@ -252,6 +265,12 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     const bookingPayload = (cleaningCustomerApi.createBooking as any).mock.calls[0][0];
     expect(bookingPayload).not.toHaveProperty('furnishingState');
     expect(bookingPayload).not.toHaveProperty('frequency');
+    expect(await screen.findByText('Phew, your booking went through, Test!')).toBeInTheDocument();
+    expect(screen.getByText('CLN-TEST-99')).toBeInTheDocument();
+    expect(screen.getByText(/Submitted on 11\/11\/2026, 07:42/)).toBeInTheDocument();
+    expect(screen.getByText(/Payment is still pending/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'support@lofix.uk' })).toHaveAttribute('href', 'mailto:support@lofix.uk');
+    expect(screen.getByRole('button', { name: 'Continue to payment' })).toBeInTheDocument();
   });
 
   it('handles legacy total-only properties by prompting for breakdown', async () => {

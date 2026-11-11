@@ -6,23 +6,27 @@ import { AlertCircle, CheckCircle2, LifeBuoy, X } from 'lucide-react';
 interface SupportTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
-  orderId: string | number;
+  orderId?: string | number;
   transactionId?: string | number;
   providerReference?: string;
   defaultMessage?: string;
   onEmailSupportClick?: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
 export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({
   isOpen,
   onClose,
-  orderId,
+  orderId = 'GENERAL_SUPPORT',
   transactionId,
   providerReference,
   defaultMessage,
   onEmailSupportClick,
+  title,
+  subtitle,
 }) => {
-  const [message, setMessage] = useState(defaultMessage || 'Payment succeeded but my order delivery encountered an issue.');
+  const [message, setMessage] = useState(defaultMessage || 'Hello Admin, I need assistance with my account or service.');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<{ message: string; ticket: SupportTicketResult } | null>(null);
@@ -78,8 +82,10 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({
               <LifeBuoy className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold">Contact Support</h3>
-              <p className="text-xs text-slate-300 font-mono">Order #{orderId}</p>
+              <h3 className="text-base font-bold">{title || 'Contact Admin Support'}</h3>
+              <p className="text-xs text-slate-300 font-mono">
+                {subtitle || (String(orderId).startsWith('GENERAL') || String(orderId).startsWith('AGENT') ? 'Direct message to Admin' : `Order #${orderId}`)}
+              </p>
             </div>
           </div>
           <button
@@ -104,7 +110,7 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({
                 </p>
               </div>
               <p className="text-[11px] text-slate-400 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                Support is reviewing your order details. Keep your order delivery status separate while reconciliation continues.
+                Support is reviewing your message. Our admin team will get back to you shortly.
               </p>
               <div className="pt-2 flex gap-2">
                 <Button variant="primary" size="sm" className="w-full font-bold" onClick={onClose}>
@@ -121,15 +127,17 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({
                 </div>
               )}
 
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1 font-mono text-slate-600">
-                <p>Order ID: <strong>#{orderId}</strong></p>
-                {transactionId && <p>Transaction ID: <strong>#{transactionId}</strong></p>}
-                {providerReference && <p>Provider Ref: <strong>{providerReference}</strong></p>}
-              </div>
+              {(transactionId || providerReference || (!String(orderId).startsWith('GENERAL') && !String(orderId).startsWith('AGENT'))) && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1 font-mono text-slate-600">
+                  {orderId && <p>Reference ID: <strong>#{orderId}</strong></p>}
+                  {transactionId && <p>Transaction ID: <strong>#{transactionId}</strong></p>}
+                  {providerReference && <p>Provider Ref: <strong>{providerReference}</strong></p>}
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Issue Description (1–3000 characters)
+                  Your Message to Admin (1–3000 characters)
                 </label>
                 <textarea
                   rows={4}
@@ -137,7 +145,7 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({
                   maxLength={3000}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Describe your issue or missing token..."
+                  placeholder="Type your message or inquiry for the admin..."
                   className="w-full p-3 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 text-slate-900 bg-white"
                 />
               </div>
@@ -151,7 +159,7 @@ export const SupportTicketModal: React.FC<SupportTicketModalProps> = ({
                   disabled={isSubmitting || retryAfterSeconds > 0 || !message.trim()}
                   leftIcon={<LifeBuoy className="w-4 h-4" />}
                 >
-                  {retryAfterSeconds > 0 ? `Rate limited (${retryAfterSeconds}s)` : 'Submit Support Ticket'}
+                  {retryAfterSeconds > 0 ? `Rate limited (${retryAfterSeconds}s)` : 'Send Message to Admin'}
                 </Button>
 
                 {onEmailSupportClick && (
