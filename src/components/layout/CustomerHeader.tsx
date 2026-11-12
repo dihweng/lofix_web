@@ -53,7 +53,6 @@ export const CustomerHeader: React.FC = () => {
     { name: 'Apartments & Shortlets', path: '/shortlets', icon: <Building2 className="w-4 h-4" /> },
     { name: 'Cleaning Calculator', path: '/cleaning', icon: <Calculator className="w-4 h-4" /> },
     { name: 'Bills & Utilities', path: '/utilities', icon: <Zap className="w-4 h-4 text-amber-500" /> },
-    { name: 'FAQs', path: '/faqs', icon: <HelpCircle className="w-4 h-4" /> },
   ];
 
   if (isAuthenticated) {
@@ -156,6 +155,14 @@ export const CustomerHeader: React.FC = () => {
                       <User className="w-4 h-4" />
                       <span>Profile Settings</span>
                     </button>
+                    <Link
+                      to="/faqs"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                      <span>FAQs</span>
+                    </Link>
                     <button
                       onClick={() => {
                         setIsUserDropdownOpen(false);
@@ -259,6 +266,14 @@ export const CustomerHeader: React.FC = () => {
                   >
                     Profile & Settings
                   </Button>
+                  <Link
+                    to="/faqs"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    <span>FAQs</span>
+                  </Link>
                   <Button
                     variant="danger"
                     size="sm"
