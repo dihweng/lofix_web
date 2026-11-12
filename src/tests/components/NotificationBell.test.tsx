@@ -1,0 +1,31 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach, expect, it, vi } from 'vitest';
+import { NotificationBell } from '../../components/support/NotificationBell';
+import { supportApi } from '../../api/support';
+afterEach(() => { vi.restoreAllMocks(); });
+const item = { id: 7, messageId: 42, title: 'Support replied: Cleaning enquiry', readAt: null, createdAt: '2026-11-12T09:00:00Z' };
+const mount = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}><MemoryRouter><NotificationBell accountId={4} /></MemoryRouter></QueryClientProvider>);
+it('shows unread replies, links to the enquiry and persists marking as read', async () => {
+  const get = vi.spyOn(supportApi, 'getNotifications').mockResolvedValue({ items: [item], unreadCount: 1, total: 1 });
+  const mark = vi.spyOn(supportApi, 'markNotificationRead').mockImplementation(async () => { get.mockResolvedValue({ items: [{ ...item, readAt: '2026-11-12T10:00:00Z' }], unreadCount: 0, total: 1 }); });
+  mount();
+  fireEvent.click(await screen.findByRole('button', { name: 'Notifications, 1 unread' }));
+  expect(screen.getByRole('link', { name: item.title })).toHaveAttribute('href', '/contact?message=42');
+  fireEvent.click(screen.getByRole('button', { name: 'Mark as read' }));
+  await waitFor(() => expect(mark).toHaveBeenCalledWith(7));
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Mark as read' })).not.toBeInTheDocument());
+  expect(screen.getByRole('button', { name: 'Notifications' })).toHaveAttribute('aria-expanded', 'true');
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(screen.queryByRole('region', { name: 'Notifications' })).not.toBeInTheDocument();
+});
+it('keeps unread state and reports a failed read update', async () => {
+  vi.spyOn(supportApi, 'getNotifications').mockResolvedValue({ items: [item], unreadCount: 1, total: 1 });
+  vi.spyOn(supportApi, 'markNotificationRead').mockRejectedValue(Error('offline'));
+  mount();
+  fireEvent.click(await screen.findByRole('button', { name: 'Notifications, 1 unread' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Mark as read' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not mark');
+  expect(screen.getByRole('button', { name: 'Notifications, 1 unread' })).toBeInTheDocument();
+});

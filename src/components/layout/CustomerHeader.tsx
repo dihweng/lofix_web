@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
 import { AuthModals } from '../auth/AuthModals';
+import { NotificationBell } from '../support/NotificationBell';
 import {
   Sparkles,
   Building2,
@@ -98,6 +99,7 @@ export const CustomerHeader: React.FC = () => {
           </nav>
 
           {/* User Profile / Auth Actions */}
+          {isAuthenticated && user && <NotificationBell key={user.id} accountId={user.id} />}
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated && user ? (
               <div className="relative">
@@ -166,12 +168,12 @@ export const CustomerHeader: React.FC = () => {
                     <button
                       onClick={() => {
                         setIsUserDropdownOpen(false);
-                        window.location.href = 'mailto:support@lofix.ng?subject=Lofix%20customer%20support';
+                        navigate('/contact');
                       }}
                       className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center gap-2"
                     >
                       <LifeBuoy className="w-4 h-4 text-emerald-600" />
-                      <span>Contact Admin Support</span>
+                      <span>Contact Support</span>
                     </button>
                     <div className="border-t border-slate-100 my-1"></div>
                     <button
@@ -241,12 +243,12 @@ export const CustomerHeader: React.FC = () => {
               <button
                 onClick={() => {
                   setIsMobileMenuOpen(false);
-                  window.location.href = 'mailto:support@lofix.ng?subject=Lofix%20customer%20support';
+                  navigate('/contact');
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 text-left"
               >
                 <LifeBuoy className="w-4 h-4 text-emerald-600" />
-                <span>Contact Admin Support</span>
+                <span>Contact Support</span>
               </button>
             </nav>
 

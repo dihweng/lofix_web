@@ -75,11 +75,11 @@ export const CustomerFooter: React.FC = () => {
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-500" />
-                <span>+234 (0) 800 563 4900</span>
+                <a href="tel:+2349099474330">0909 947 4330</a>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-emerald-500" />
-                <span>support@lofix.com</span>
+                <Link to="/contact" className="hover:text-emerald-400 transition-colors">Contact Support</Link>
               </li>
             </ul>
           </div>

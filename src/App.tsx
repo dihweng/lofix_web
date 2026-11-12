@@ -17,6 +17,7 @@ import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/legal/TermsOfServicePage';
 import { EmailVerificationPage } from './pages/EmailVerificationPage';
 import { FaqPage } from './pages/FaqPage';
+import { ContactPage } from './pages/ContactPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ export const App: React.FC = () => {
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/faqs" element={<FaqPage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route path="/account/verify-email" element={<EmailVerificationPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
