@@ -8,7 +8,7 @@ Render the `{{name}}` placeholders with HTML-escaped values from the persisted b
 
 Include the booked service name, requested schedule, address, room counts, supplies preference, frequency, add-on names and quantities, dishwashing names and quantities, arrival instructions, authoritative total, and current payment status. Read these from persisted snapshots rather than the editable calculator.
 
-For pending payment, use `paymentMessage`: “Your booking has been received. Payment is still pending. You can complete payment in My Bookings.” Do not label it paid until the backend verifies payment.
+For a pending prepaid booking, use `paymentMessage`: “Your booking has been received. Payment is still pending. You can complete payment in My Bookings.” For a confirmed deferred booking, use: “Your booking is confirmed. Payment is due after cleaning is completed. You can also pay now in My Bookings.” Once a deferred job is complete but unpaid, say: “Your cleaning is complete. Please pay the outstanding balance in My Bookings.” Choose this wording from the saved booking terms and current transaction status. Do not label a booking paid until the backend verifies payment.
 
 The existing backend at `helpers/send-email.js` accepts `{ to, subject, html }`. Integrate sending after booking persistence via a retryable notification job, deduplicated by booking ID and notification type. A mail failure must not fail or duplicate the booking. Send only to the booking account's email, and keep mail credentials on the server.
 

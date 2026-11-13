@@ -79,6 +79,7 @@ export const CleaningCalculatorPage: React.FC = () => {
   });
 
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+  const [paymentTiming, setPaymentTiming] = useState<'PAY_NOW' | 'AFTER_COMPLETION'>('PAY_NOW');
   const [selectedPropertyTypeId, setSelectedPropertyTypeId] = useState<number | null>(null);
 
   // Split Room Counts — Defaults: Bedrooms = 1, Living = 0, Bathrooms = 1
@@ -368,6 +369,7 @@ export const CleaningCalculatorPage: React.FC = () => {
       const dishwashingPayload = getDishwashingPayload();
 
       const booking = await cleaningCustomerApi.createBooking({
+        paymentTiming: quoteSnapshot?.paymentPolicy === 'PAY_NOW_OR_AFTER_COMPLETION' ? paymentTiming : 'PAY_NOW',
         propertyId: selectedPropertyId,
         serviceId: selectedServiceId,
         scheduledAt,
@@ -1258,6 +1260,16 @@ export const CleaningCalculatorPage: React.FC = () => {
                 </div>
               )}
 
+              {quoteSnapshot?.paymentPolicy === 'PAY_NOW_OR_AFTER_COMPLETION' && (
+                <fieldset className="rounded-xl border border-emerald-200 p-4 space-y-3 text-sm">
+                  <legend className="font-semibold text-slate-900 px-1">When would you like to pay?</legend>
+                  <label className="flex items-start gap-2 cursor-pointer"><input type="radio" name="cleaning-payment-timing" checked={paymentTiming === 'PAY_NOW'} onChange={() => setPaymentTiming('PAY_NOW')} /><span>Pay now</span></label>
+                  <label className="flex items-start gap-2 cursor-pointer"><input type="radio" name="cleaning-payment-timing" checked={paymentTiming === 'AFTER_COMPLETION'} onChange={() => setPaymentTiming('AFTER_COMPLETION')} /><span>Pay after the cleaning is completed</span></label>
+                  <p className="text-xs text-slate-500">The same total applies. If you pay later, your booking can be confirmed and a cleaner assigned before payment.</p>
+                </fieldset>
+              )}
+              {quoteSnapshot && quoteSnapshot.paymentPolicy !== 'PAY_NOW_OR_AFTER_COMPLETION' && <p className="text-xs text-slate-500">This service requires payment before cleaning.</p>}
+
               {!isTestMode && currentStep < 5 ? (
                 <Button
                   type="button"
@@ -1279,7 +1291,7 @@ export const CleaningCalculatorPage: React.FC = () => {
                   onClick={handleBookNow}
                   leftIcon={<Sparkles className="w-4 h-4" />}
                 >
-                  Book & Proceed to Checkout
+                  {quoteSnapshot?.paymentPolicy === 'PAY_NOW_OR_AFTER_COMPLETION' && paymentTiming === 'AFTER_COMPLETION' ? 'Book & Pay After Cleaning' : 'Book & Proceed to Checkout'}
                 </Button>
               )}
 
@@ -1337,7 +1349,7 @@ export const CleaningCalculatorPage: React.FC = () => {
         onClose={() => setCheckoutTransactionId(null)}
         onSuccess={() => {
           setCheckoutTransactionId(null);
-          addToast('success', 'Cleaning service payment verified! Order confirmed.');
+          addToast('success', 'Cleaning payment verified. Your payment status has been updated.');
           setTimeout(() => {
             navigate('/dashboard?tab=bookings');
           }, 1200);

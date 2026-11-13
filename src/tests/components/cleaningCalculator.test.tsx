@@ -83,6 +83,19 @@ describe('CleaningCalculatorPage Room-Based Pricing & Dishwashing Catalogue Flow
     fireEvent.click(await screen.findByRole('button', { name: /My Lekki Flat|Legacy Victoria Island Flat/ }));
   };
 
+  it('uses the server payment policy to offer booking without immediate payment', async () => {
+    vi.mocked(cleaningCustomerApi.calculateQuote).mockResolvedValue({ basePrice: 500000, roomCharges: 0, bathroomCharges: 0, sqMeterCharges: 0, addonsTotal: 0, serviceFee: 0, total: 500000, serviceName: 'Standard Cleaning', paymentPolicy: 'PAY_NOW_OR_AFTER_COMPLETION' } as any);
+    vi.mocked(cleaningCustomerApi.createBooking).mockResolvedValue({ id: 99, transactionId: 202, reference: 'CLN-LATER', total: 500000, status: 'CONFIRMED', paymentTiming: 'AFTER_COMPLETION', paymentStatus: 'PENDING' } as any);
+    await renderComponent();
+    fireEvent.click(await screen.findByRole('radio', { name: 'Pay after the cleaning is completed' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Book & Pay After Cleaning' }));
+    await waitFor(() => expect(cleaningCustomerApi.createBooking).toHaveBeenCalledWith(expect.objectContaining({ paymentTiming: 'AFTER_COMPLETION' })));
+    expect(await screen.findByText(/Your booking is confirmed. Payment is due after/)).toBeInTheDocument();
+    expect(screen.getByText(/Lofix handles all cleaner interviews/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pay now' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pay after completion — view booking/ })).toBeInTheDocument();
+  });
+
   it('does not request or show a quote until the customer selects and confirms a configuration', async () => {
     (cleaningCustomerApi.calculateQuote as any).mockResolvedValue({
       basePrice: 500000,

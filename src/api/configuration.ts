@@ -23,6 +23,7 @@ export interface PropertyType {
 }
 
 export interface CleaningService {
+  paymentPolicy?: 'PREPAID_ONLY' | 'PAY_NOW_OR_AFTER_COMPLETION';
   id: number;
   categoryId: number;
   name: string;

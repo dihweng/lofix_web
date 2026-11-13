@@ -97,6 +97,13 @@ function renderDashboard() {
 }
 
 describe('pending cleaning bookings in My Bookings', () => {
+  it('lets a completed unpaid cleaning booking collect its outstanding balance', async () => {
+    mocks.getCleaningBookings.mockResolvedValue([{ ...pendingBooking, status: 'COMPLETED', paymentTiming: 'AFTER_COMPLETION', paymentStatus: 'PENDING', paymentDue: true, canPayNow: true }]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Pay outstanding balance' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Payment transaction 241');
+    expect(screen.getByText('Payment due')).toBeInTheDocument();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getCleaningBookings.mockResolvedValue([pendingBooking]);

@@ -686,6 +686,8 @@ export const UserDashboardPage: React.FC = () => {
                           </span>
 
                           <div className="flex items-center gap-2">
+                            {b.paymentStatus && <span className="text-xs text-slate-600">{b.paymentStatus === 'COMPLETED' ? 'Paid' : b.status === 'CANCELLED' ? 'Cancelled' : b.paymentDue ? 'Payment due' : b.paymentTiming === 'AFTER_COMPLETION' ? 'Pay after completion' : 'Payment pending'}</span>}
+                            {b.canPayNow && b.status !== 'PAYMENT_PENDING' && <Button type="button" size="sm" onClick={() => setCheckoutTransactionId(b.transactionId)} leftIcon={<CreditCard className="w-3.5 h-3.5" />}>{b.paymentDue ? 'Pay outstanding balance' : 'Pay now'}</Button>}
                             {!isCompleted && b.status !== 'CANCELLED' && <Button type="button" variant="outline" size="sm" className="font-bold text-xs" onClick={() => setArrivalBooking(b)} leftIcon={<MessageSquare className="w-3.5 h-3.5" />}>Arrival details</Button>}
                             {isCompleted && b.hasReview && (
                               <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">

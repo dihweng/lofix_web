@@ -56,6 +56,7 @@ export interface PriceSnapshotDishwashingItem {
 }
 
 export interface PriceSnapshot {
+  paymentPolicy?: 'PREPAID_ONLY' | 'PAY_NOW_OR_AFTER_COMPLETION';
   basePrice: number;
   pricePerRoom?: number;
   pricePerBathroom?: number;
@@ -94,6 +95,11 @@ export interface CleaningAssignment {
 }
 
 export interface CleaningBooking {
+  paymentPolicy?: 'PREPAID_ONLY' | 'PAY_NOW_OR_AFTER_COMPLETION';
+  paymentTiming?: 'PAY_NOW' | 'AFTER_COMPLETION';
+  paymentStatus?: string;
+  paymentDue?: boolean;
+  canPayNow?: boolean;
   id: number;
   reference: string;
   accountId: number;

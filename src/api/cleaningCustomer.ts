@@ -67,6 +67,7 @@ export interface QuoteRequestPayload {
 }
 
 export interface CreateCleaningBookingPayload {
+  paymentTiming?: 'PAY_NOW' | 'AFTER_COMPLETION';
   propertyId: number;
   serviceId: number;
   scheduledAt: string; // ISO string
