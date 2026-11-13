@@ -113,6 +113,41 @@ describe('pending cleaning bookings in My Bookings', () => {
     mocks.getUtilityOrders.mockResolvedValue([]);
   });
 
+  it('keeps completed unpaid cleaning visible in Active and Completed filters', async () => {
+    mocks.getCleaningBookings.mockResolvedValue([{ ...pendingBooking, status: 'COMPLETED', paymentTiming: 'AFTER_COMPLETION', paymentStatus: 'PENDING', paymentDue: true, canPayNow: true }]);
+    renderDashboard();
+    await screen.findByRole('button', { name: 'Pay outstanding balance' });
+    fireEvent.click(screen.getByRole('button', { name: 'Active' }));
+    expect(screen.getByRole('button', { name: 'Pay outstanding balance' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Completed' }));
+    expect(screen.getByRole('button', { name: 'Pay outstanding balance' })).toBeInTheDocument();
+  });
+
+  it('keeps cleaning bookings visible when shortlet loading fails', async () => {
+    mocks.getShortletBookings.mockRejectedValue(new Error('Unavailable'));
+    renderDashboard();
+    expect(await screen.findByRole('button', { name: 'Complete Payment' })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to refresh shortlet bookings');
+  });
+
+  it('can recover failed bookings without signing out', async () => {
+    mocks.getCleaningBookings.mockRejectedValueOnce(new Error('Unavailable')).mockResolvedValue([pendingBooking]);
+    renderDashboard();
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh bookings' }));
+    expect(await screen.findByRole('button', { name: 'Complete Payment' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('preserves cached bookings when a refresh fails', async () => {
+    mocks.getCleaningBookings.mockResolvedValueOnce([pendingBooking]).mockRejectedValue(new Error('Unavailable'));
+    renderDashboard();
+    await screen.findByRole('button', { name: 'Complete Payment' });
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh bookings' }));
+    await screen.findByRole('alert');
+    expect(screen.getByRole('button', { name: 'Complete Payment' })).toBeInTheDocument();
+  });
+
   it('lets the customer resume payment using the booking transaction', async () => {
     renderDashboard();
 

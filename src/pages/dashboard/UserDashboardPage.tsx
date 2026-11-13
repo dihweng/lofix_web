@@ -76,24 +76,30 @@ export const UserDashboardPage: React.FC = () => {
   const {
     data: cleaningBookings = [],
     isLoading: isCleaningLoading,
+    isFetching: isCleaningFetching,
     isError: isCleaningError,
     refetch: refetchCleaning,
   } = useQuery({
     queryKey: ['myCleaningBookings', user?.id],
     enabled: isAuthenticated,
     queryFn: cleaningCustomerApi.getCustomerBookings,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
     retry: false,
   });
 
   const {
     data: shortletBookings = [],
     isLoading: isShortletLoading,
+    isFetching: isShortletFetching,
     isError: isShortletError,
     refetch: refetchShortlets,
   } = useQuery({
     queryKey: ['myShortletBookings', user?.id],
     enabled: isAuthenticated,
     queryFn: shortletCustomerApi.getCustomerBookings,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
     retry: false,
   });
 
@@ -364,7 +370,7 @@ export const UserDashboardPage: React.FC = () => {
   const finalRecentItems = actualRecentItems.length > 0 ? actualRecentItems : demoSeedItems;
 
   const filteredCleaningBookings = cleaningBookings.filter((b) => {
-    if (bookingStatusFilter === 'active') return b.status !== 'COMPLETED' && b.status !== 'CANCELLED';
+    if (bookingStatusFilter === 'active') return b.status !== 'CANCELLED' && (b.status !== 'COMPLETED' || b.paymentDue === true);
     if (bookingStatusFilter === 'completed') return b.status === 'COMPLETED';
     return true;
   });
@@ -636,12 +642,12 @@ export const UserDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {isCleaningLoading || isShortletLoading ? (
-              <Card>Loading bookings…</Card>
-            ) : isCleaningError || isShortletError ? (
-              <Card><p role="alert">Unable to load bookings. Please try again.</p></Card>
-            ) : (bookingTypeFilter === 'shortlet' || filteredCleaningBookings.length === 0) && (bookingTypeFilter === 'cleaning' || filteredShortletBookings.length === 0) ? (
-              <Card className="p-8 text-center space-y-3">
+            <Button variant="outline" size="sm" onClick={() => { void refetchCleaning(); void refetchShortlets(); }} isLoading={isCleaningFetching || isShortletFetching} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>Refresh bookings</Button>
+            {isCleaningError && bookingTypeFilter !== 'shortlet' && <Card><p role="alert">Unable to refresh cleaning bookings. Any previously loaded bookings remain below. Use Refresh bookings to try again.</p></Card>}
+            {isShortletError && bookingTypeFilter !== 'cleaning' && <Card><p role="alert">Unable to refresh shortlet bookings. Any previously loaded bookings remain below. Use Refresh bookings to try again.</p></Card>}
+            {((isCleaningLoading && bookingTypeFilter !== 'shortlet') || (isShortletLoading && bookingTypeFilter !== 'cleaning')) && <Card>Loading bookings…</Card>}
+            { (bookingTypeFilter === 'shortlet' || filteredCleaningBookings.length === 0) && (bookingTypeFilter === 'cleaning' || filteredShortletBookings.length === 0) ? (
+              !isCleaningLoading && !isShortletLoading && !isCleaningError && !isShortletError && <Card className="p-8 text-center space-y-3">
                 <CalendarCheck className="w-10 h-10 text-slate-300 mx-auto" />
                 <h4 className="text-sm font-bold text-slate-800">{cleaningBookings.length === 0 && shortletBookings.length === 0 ? 'You have no active bookings' : 'No bookings found'}</h4>
                 <p className="text-xs text-slate-500">You do not have any bookings matching the selected filter.</p>
