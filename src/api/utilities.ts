@@ -95,6 +95,7 @@ export interface VtpassOrderDetail {
   totalAmount?: number; // kobo
   electricity?: ElectricityOrderInfo | null;
   status: 'READY' | 'PENDING' | 'SUCCESS' | 'FAILED' | string;
+  orderStatus?: 'PENDING' | 'COMPLETED' | 'NEEDS_SUPPORT';
   paymentStatus?: string;
   deliveryStatus?: string;
   message?: string;
@@ -337,6 +338,7 @@ export const utilitiesApi = {
         phone: item.phone,
         amount,
         status,
+        orderStatus: item.orderStatus,
         paymentStatus: item.paymentStatus || item.payment_status,
         deliveryStatus: item.deliveryStatus || item.delivery_status || status,
         message: item.message,

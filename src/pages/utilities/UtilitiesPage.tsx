@@ -1136,7 +1136,7 @@ export const UtilitiesPage: React.FC = () => {
                         <span className="font-bold text-slate-900">{formatNaira(orderPreview.fee)}</span>
                       </div>
                     )}
-                    {!orderPreview.electricity?.receipt && (
+                    {activeCategory === 'ELECTRICITY' && !orderPreview.electricity?.receipt && (
                       <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-[11px] leading-relaxed">
                         Electricity units, applicable taxes and provider deductions will appear on your receipt when supplied by the provider.
                       </div>

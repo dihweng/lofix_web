@@ -118,7 +118,10 @@ export const UserDashboardPage: React.FC = () => {
     data: utilityOrders = [],
     refetch: refetchUtilities,
   } = useQuery({
-    queryKey: ['myUtilityOrders'],
+    queryKey: ['myUtilityOrders', user?.id],
+    enabled: isAuthenticated,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
     queryFn: utilitiesApi.getUserVtpassOrders,
     retry: false,
   });
@@ -840,7 +843,7 @@ export const UserDashboardPage: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredUtilityOrders.map((order) => {
-                  const statusVal = order.deliveryStatus || order.status;
+                  const statusVal = order.orderStatus === 'COMPLETED' ? 'SUCCESS' : order.orderStatus === 'NEEDS_SUPPORT' ? 'FAILED' : order.deliveryStatus || order.status;
                   const isFailed = statusVal === 'FAILED' || order.requiresSupport;
                   const isSuccess = statusVal === 'SUCCESS';
 

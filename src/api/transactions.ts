@@ -9,6 +9,11 @@ export interface SystemTransaction {
   amount: number; // in integer kobo
   type: TransactionType;
   status: TransactionStatus;
+  orderStatus?: 'PENDING' | 'COMPLETED' | 'NEEDS_SUPPORT';
+  paymentStatus?: TransactionStatus;
+  deliveryStatus?: string;
+  requiresSupport?: boolean;
+  message?: string;
   description?: string;
   accountId: number;
   account?: { id: number; firstName: string; lastName: string; email: string };
@@ -35,6 +40,10 @@ export interface TransactionReceipt {
     amount: number;
     type: string;
     status: string;
+    orderStatus?: 'PENDING' | 'COMPLETED' | 'NEEDS_SUPPORT';
+    paymentStatus?: string;
+    deliveryStatus?: string;
+    message?: string;
     description?: string;
   };
   details: Record<string, unknown>;

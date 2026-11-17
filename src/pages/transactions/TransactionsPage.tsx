@@ -15,7 +15,7 @@ import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { Modal } from '../../components/common/Modal';
 import { Badge } from '../../components/common/Badge';
-import { Receipt, Search, CreditCard, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Receipt, Search } from 'lucide-react';
 
 export const TransactionsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,6 +25,8 @@ export const TransactionsPage: React.FC = () => {
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['admin-transactions-all'],
     queryFn: () => transactionsApi.getAdminTransactions(),
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: receipt, isLoading: isReceiptLoading } = useQuery<TransactionReceipt>({
@@ -92,8 +94,14 @@ export const TransactionsPage: React.FC = () => {
           PENDING: 'warning' as const,
           COMPLETED: 'success' as const,
           FAILED: 'danger' as const,
+          NEEDS_SUPPORT: 'danger' as const,
         };
-        return <Badge variant={variants[t.status]}>{t.status}</Badge>;
+        const status = t.orderStatus || t.status;
+        return <div className="space-y-1">
+          <Badge variant={variants[status]}>{status.replace(/_/g, ' ')}</Badge>
+          {t.orderStatus && <div className="text-xs text-slate-600">Payment: {(t.paymentStatus || t.status) === 'COMPLETED' ? 'Paid' : t.paymentStatus || t.status}</div>}
+          {t.message && <p className="text-xs text-slate-600">{t.message}</p>}
+        </div>;
       },
     },
     {
@@ -191,6 +199,11 @@ export const TransactionsPage: React.FC = () => {
                   {receipt.transaction.status}
                 </Badge>
               </div>
+
+              {receipt.transaction.orderStatus && <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                <span className="font-semibold">Order status: {receipt.transaction.orderStatus.replace(/_/g, ' ')}</span>
+                <p>{receipt.transaction.message}</p>
+              </div>}
 
               {/* Details Breakdown */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
