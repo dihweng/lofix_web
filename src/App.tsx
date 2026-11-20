@@ -1,3 +1,4 @@
+import { CleaningEnquiryPage } from './pages/cleaning/CleaningEnquiryPage';
 import React from 'react';
 import { PasswordRecoveryPage } from './pages/PasswordRecoveryPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -39,6 +40,7 @@ export const App: React.FC = () => {
               <Route path="/shortlets" element={<ShortletsBrowsePage />} />
               <Route path="/shortlets/:type/:id" element={<ShortletDetailPage />} />
               <Route path="/listings/:id" element={<ListingDetailPage />} />
+              <Route path="/cleaning/enquiry/:kind" element={<CleaningEnquiryPage />} />
               <Route path="/cleaning" element={<CleaningCalculatorPage />} />
               <Route path="/utilities" element={<UtilitiesPage />} />
               <Route path="/dashboard" element={<UserDashboardPage />} />

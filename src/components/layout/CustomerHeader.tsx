@@ -51,8 +51,8 @@ export const CustomerHeader: React.FC = () => {
 
   const navLinks = [
     { name: 'Home', path: '/', icon: <Home className="w-4 h-4" /> },
-    { name: 'Apartments & Shortlets', path: '/shortlets', icon: <Building2 className="w-4 h-4" /> },
     { name: 'Cleaning Calculator', path: '/cleaning', icon: <Calculator className="w-4 h-4" /> },
+    { name: 'Apartments & Shortlets', path: '/shortlets', icon: <Building2 className="w-4 h-4" /> },
     { name: 'Bills & Utilities', path: '/utilities', icon: <Zap className="w-4 h-4 text-amber-500" /> },
   ];
 
@@ -76,7 +76,7 @@ export const CustomerHeader: React.FC = () => {
             </div>
             <div>
               <span className="text-xl font-bold tracking-tight text-slate-900 font-display">Lofix</span>
-              <span className="text-xs text-emerald-600 font-semibold block leading-3">Homes & Services</span>
+              <span className="text-xs text-emerald-600 font-semibold block leading-3">Cleaning & Home Care</span>
             </div>
           </Link>
 

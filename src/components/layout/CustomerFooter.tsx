@@ -16,7 +16,7 @@ export const CustomerFooter: React.FC = () => {
               <span className="text-xl font-bold tracking-tight text-white font-display">Lofix</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Premium shortlets, on-demand home cleaning, and instant utility bill payments across Nigeria. Luxury living made effortless.
+              Cleaning and home care built around your routine. Make room for what matters with Lofix.
             </p>
             <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
               <ShieldCheck className="w-4 h-4" />
@@ -26,38 +26,38 @@ export const CustomerFooter: React.FC = () => {
 
           {/* Shortlets links */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100 mb-4">Apartments & Shortlets</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100 mb-4">Cleaning Services</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
               <li>
-                <Link to="/shortlets" className="hover:text-emerald-400 transition-colors">Luxury Apartments</Link>
+                <Link to="/cleaning" className="hover:text-emerald-400 transition-colors">Regular Home Cleaning</Link>
               </li>
               <li>
-                <Link to="/shortlets" className="hover:text-emerald-400 transition-colors">Single Room Rentals</Link>
+                <Link to="/cleaning" className="hover:text-emerald-400 transition-colors">One-off & Deep Cleaning</Link>
               </li>
               <li>
-                <Link to="/shortlets" className="hover:text-emerald-400 transition-colors">Duplex Shortlets</Link>
+                <Link to="/#cleaning-plans" className="hover:text-emerald-400 transition-colors">Dedicated House Cleaners</Link>
               </li>
               <li>
-                <Link to="/shortlets" className="hover:text-emerald-400 transition-colors">For Rent & For Sale</Link>
+                <Link to="/#commercial-cleaning" className="hover:text-emerald-400 transition-colors">Commercial Cleaning</Link>
               </li>
             </ul>
           </div>
 
           {/* Home Cleaning & Utilities */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100 mb-4">Cleaning & Utilities</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-100 mb-4">Explore Lofix</h4>
             <ul className="space-y-2.5 text-xs text-slate-400">
               <li>
                 <Link to="/cleaning" className="hover:text-emerald-400 transition-colors">Home Cleaning Calculator</Link>
               </li>
               <li>
-                <Link to="/utilities" className="hover:text-emerald-400 transition-colors">Buy Electricity Tokens</Link>
+                <Link to="/#become-a-cleaner" className="hover:text-emerald-400 transition-colors">Become a Cleaning Agent</Link>
               </li>
               <li>
-                <Link to="/utilities" className="hover:text-emerald-400 transition-colors">Buy Data & Airtime</Link>
+                <Link to="/#cleaning-services" className="hover:text-emerald-400 transition-colors">Our Cleaning Services</Link>
               </li>
               <li>
-                <Link to="/utilities" className="hover:text-emerald-400 transition-colors">Renew Cable TV Subscriptions</Link>
+                <Link to="/faqs" className="hover:text-emerald-400 transition-colors">Cleaning FAQs</Link>
               </li>
             </ul>
           </div>
